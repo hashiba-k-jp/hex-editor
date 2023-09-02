@@ -88,11 +88,6 @@ void updateWindowSize(void) {
 void initEditor(void){
     printf("[called] initEditor\n");
 
-    // int cursor_x, cursor_y;
-    // printf("%s", "\x1B[6n");
-    // scanf("\x1B[%d;%dR", &cursor_y, &cursor_x);
-    //printf("x = %d, y = %d\n", cursor_x, cursor_y);
-
     E.cx = 0;
     E.cy = 0;
     E.width = 0x10;
@@ -118,13 +113,10 @@ void deinitEditor(void){
 void editorInsertByte(int at, unsigned int ca){
     // printf("[called] editorInsertByte\n");
 
-    // THIS FUNCTION IS JUST ADDING AT THE END !!! (TENPORARY)
     E.bytes = realloc(E.bytes, sizeof(BYTE) * (E.numbytes + 1));
 
     E.bytes[at].c = ca;
-    // printf("%c", ca);
     E.numbytes++;
-    // E.dirty++;
 }
 
 int editorOpen(char *filename){
@@ -150,6 +142,19 @@ int editorOpen(char *filename){
     }
     fclose(fp);
     // E.dirty = 0;
+    return 0;
+}
+
+int editorSave(void){
+    int i;
+    FILE *fp;
+    fp = fopen(E.filename,"w");
+
+    for(i = 0; i < E.numbytes; i++){
+        fwrite(&E.bytes[i].c, sizeof(char), 1, fp);
+        printf("\a");
+    }
+    fclose(fp);
     return 0;
 }
 
@@ -276,7 +281,6 @@ void editorSetStatusMessage(const char *msg){
 }
 
 /* 553 ======================= Editor rows implementation ======================= */
-
 
 void insertChar(int c){
     /*
@@ -535,7 +539,6 @@ void displayScreen(void){
 
 /* 1109 ========================= Editor events handling  ======================== */
 
-
 void moveCursor(int dir){
     // printf("[called] moveCursor\r\n");
 
@@ -663,9 +666,10 @@ void keyProcess(int fd){
         case CTRL_Q: // ^Q
             exit(0);
         case CTRL_S: // ^S
+            editorSave();
             break;
         case CTRL_X: // ^X
-            exit(0);
+            break;
         case DEL:
             deleteChar();
             break;
@@ -693,8 +697,6 @@ int main(int argc, char *argv[]){
     editorOpen(argv[1]);
     enableRawMode(STDIN_FILENO);
     // editorSetStatusMessage()
-
-    // test_print();
 
     while(1){
         displayScreen();

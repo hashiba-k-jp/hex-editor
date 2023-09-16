@@ -13,6 +13,7 @@
 // #include <stdarg.h>
 // #include <fcntl.h>
 // #include <signal.h>
+#include <getopt.h>
 
 typedef struct BYTE {
     unsigned int c;
@@ -40,6 +41,9 @@ struct EDITORCONFIG {
     int editing; // 0 is false, otherwise are true;
     int editingIdx; // editing index.
     int idx;
+
+    int dispascii; // 0 NO header, 1 header (list of ascii characters)
+    int iscolored; // 0 NOT colored, 1 colored
 };
 
 enum KEYS{
@@ -83,6 +87,11 @@ void updateWindowSize(void) {
         exit(1);
     }
     E.screenrows -= 4; /* Get room for status bar. */
+
+    // Why does NOT this work ?
+    if(E.dispascii){
+        E.screenrows -= 8;
+    }
 }
 
 void initEditor(void){
@@ -99,8 +108,10 @@ void initEditor(void){
     // E.syntax = NULL;
     E.numbytes = 0;
 
-    E.editing = 0;
-    E.idx = 0;
+    E.editing   = 0;
+    E.idx       = 0;
+    E.dispascii = 0;
+    E.iscolored = 0;
 
     updateWindowSize();
     printf("\x1B[%dS", E.screenrows);
@@ -424,7 +435,9 @@ void displayScreen(void){
                     snprintf(tmp, 2, "%c", row[i].c);
                     dbufAppend(&dbuf, tmp, 2);
                 }else{
-                    dbufAppend(&dbuf, "\x1b[32m", 5);
+                    if(E.iscolored){
+                        dbufAppend(&dbuf, "\x1b[32m", 5);
+                    }
                     switch (row[i].c) {
                         case 0x0A: // LF \n
                             snprintf(tmp, 2, "n");
@@ -438,7 +451,6 @@ void displayScreen(void){
                     }
                     dbufAppend(&dbuf, tmp, 2);
                     dbufAppend(&dbuf, "\x1b[0m", 4);
-
                 }
                 free(tmp);
             }
@@ -465,7 +477,9 @@ void displayScreen(void){
                     snprintf(tmp, 2, "%c", row[i].c);
                     dbufAppend(&dbuf, tmp, 2);
                 }else{
-                    dbufAppend(&dbuf, "\x1b[32m", 5);
+                    if(E.iscolored){
+                        dbufAppend(&dbuf, "\x1b[32m", 5);
+                    }
                     switch (row[i].c) {
                         case 0x0A: // LF \n
                             snprintf(tmp, 2, "n");
@@ -479,7 +493,6 @@ void displayScreen(void){
                     }
                     dbufAppend(&dbuf, tmp, 2);
                     dbufAppend(&dbuf, "\x1b[0m", 4);
-
                 }
                 free(tmp);
             }
@@ -502,11 +515,22 @@ void displayScreen(void){
     dbufAppend(&dbuf, "\x1b[0K\x1b[7m", 8);
     if((lenFilename = strlen(E.filename)) <= E.screencols - 36){
         // eg. hex.c - at 0x0000329x of 0x00000329 lines
+
+        /*
         snprintf(status, sizeof(char)*(lenFilename + 32 + 1), "%.20s - at %08X of %08X lines", E.filename, currentRow, (E.numbytes / E.width));
         dbufAppend(&dbuf, status, (lenFilename + 32));
         for(i = 0; i < E.screencols - (lenFilename + 32); i++){
             dbufAppend(&dbuf, " ", 1);
         }
+        */
+
+        snprintf(status, sizeof(char)*2, "%d", E.dispascii);
+        dbufAppend(&dbuf, status, 1);
+        for(i = 0; i < E.screencols - 1; i++){
+            dbufAppend(&dbuf, " ", 1);
+        }
+
+
     }else{
         // just current position and number of lines.
         dbufAppend(&dbuf, "XX", 2);
@@ -687,14 +711,34 @@ void keyProcess(int fd){
 }
 
 int main(int argc, char *argv[]){
-    printf("[called] main\n");
-    if (argc != 2) {
+    printf("[called] main\r\n");
+
+    initEditor();
+
+    int opt, longindex;
+    struct option longopts[] = {
+        {"ascii", no_argument, NULL, 'a'},
+        {"color", no_argument, NULL, 'c'},
+    };
+
+    while((opt = getopt_long(argc, argv, "ac", longopts, &longindex)) != -1){
+        // printf("%d %s\n", longindex, longopts[longindex].name);
+        switch (opt) {
+            case 'a':
+                // E.dispascii = 1;
+                break;
+            case 'c':
+                E.iscolored = 1;
+                break;
+        }
+    }
+
+    if(argc < 2){
         fprintf(stderr,"Usage: kilo <filename>\n");
         exit(1);
     }
 
-    initEditor();
-    editorOpen(argv[1]);
+    editorOpen(argv[argc-1]);
     enableRawMode(STDIN_FILENO);
     // editorSetStatusMessage()
 
@@ -703,5 +747,5 @@ int main(int argc, char *argv[]){
         keyProcess(STDIN_FILENO);
     }
 
-    return 0;
+    return EXIT_SUCCESS;
 }

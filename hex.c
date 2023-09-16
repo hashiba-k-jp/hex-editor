@@ -37,9 +37,7 @@ struct EDITORCONFIG {
     BYTE *bytes; /* This is array. */
 
     int width; /* number of bytes which are displayed in 1 row. */
-    int prevScroll;
     int editing; // 0 is false, otherwise are true;
-    int editingIdx; // editing index.
     int idx;
 
     int dispascii; // 0 NO header, 1 header (list of ascii characters)
@@ -353,6 +351,9 @@ void deleteChar(){
         E.numbytes--;
         E.editing = 0;
         moveCursor(ARR_LE);
+        if(E.idx % E.width == 0){
+            moveCursor(ARR_LE);
+        }
     }else{
         // not editing.
         if(E.idx == 0){return;}

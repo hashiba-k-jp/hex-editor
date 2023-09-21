@@ -233,9 +233,8 @@ void insertChar(int c){
 /**
 * この関数はメインデータからデータを削除する。削除されるデータの位置は EDITORCONFIG.idx から計算される。\n
 * This function will delete data. The delete data will be calculated by EDITORCONFIG.idx.
-* @param c 挿入データ。\n Inserting data.
 */
-void deleteChar(){
+void deleteChar(void){
     if(E.editing){
         // editing.
         memcpy(E.bytes+E.idx-1, E.bytes+E.idx, sizeof(BYTE)*(E.numbytes-E.idx));

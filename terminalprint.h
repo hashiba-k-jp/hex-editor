@@ -36,17 +36,19 @@ void dbufAppend(struct DISP_BUF *dbuf, const char *s, int len){
 }
 
 /**
-* DISP_BUF に文字またはエスケープシーケンスを追加する。\n
-* Add characters and/or escape sequences into the DISP_BUF.
-* @param dbuf データはdbufに追加される。\n Add data into dbuf.
-* @param s 追加するデータ。\n The data which will be added.
-* @param len 追加するデータの長さ。\n The length of being added data.
+* DISP_BUF の値を削除する。\n
+* Dalete the data of DISP_BUF.
+* @param dbuf 削除するデータ。\n The data which will be deleted.
 */
 void dbufFree(struct DISP_BUF *dbuf){
     free(dbuf->disp);
     dbuf->len = 0;
 }
 
+/**
+* 表示する画面を構成する。\n
+* Construct the display.
+*/
 void displayScreen(void){
     struct DISP_BUF dbuf = DBUF_INIT;
     struct BYTE row[E.width];

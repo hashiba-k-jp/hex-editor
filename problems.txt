@@ -6,3 +6,12 @@
 →カーソル位置のルールを変更する or この場合のみカーソル位置を一つ前の行の最後尾に移動させたい。
 
 → fixed? at 2023.09.17 00:18 JST
+
+
+# 2
+行数表示がおかしい（行の最後の文字バイト+1したい）
+
+
+
+https://www.mathkuro.com/c-cpp/doxygen/#toc7
+file:///Users/Main/Desktop/CODE/editor/hex-editor/html/terminalprint_8h_source.html

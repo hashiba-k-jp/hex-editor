@@ -48,12 +48,15 @@ void dbufFree(struct DISP_BUF *dbuf){
 /**
 * 表示する画面を構成する。\n
 * Construct the display.
+* @param msg 画面下に表示されるメッセージ文。\n The message which will be displayed buttom of the screen.
 */
-void displayScreen(void){
+void displayScreen(char* msg){
+
     struct DISP_BUF dbuf = DBUF_INIT;
     struct BYTE row[E.width];
 
     int idx = E.idx - 1;
+    // dbufAppend(&dbuf, "\x1b[2", 3);
 
     dbufAppend(&dbuf, "\x1b[?25l", 6); /* Hide cursor. */
     dbufAppend(&dbuf, "\x1b[H", 3); /* Go home. */
@@ -142,22 +145,25 @@ void displayScreen(void){
                     snprintf(tmp, 2, "%c", row[i].c);
                     dbufAppend(&dbuf, tmp, 2);
                 }else{
+                    // NOT writable characters
                     if(E.iscolored){
                         dbufAppend(&dbuf, "\x1b[32m", 5);
+                        switch (row[i].c) {
+                            case 0x0A: // LF \n
+                                snprintf(tmp, 2, "n");
+                                break;
+                            case 0x0D: // CR \r
+                                snprintf(tmp, 2, "r");
+                                break;
+                            default:
+                                snprintf(tmp, 2, ".");
+                                break;
+                        }
+                        dbufAppend(&dbuf, tmp, 2);
+                        dbufAppend(&dbuf, "\x1b[0m", 4);
+                    }else{
+                        dbufAppend(&dbuf, ".", 1);
                     }
-                    switch (row[i].c) {
-                        case 0x0A: // LF \n
-                            snprintf(tmp, 2, "n");
-                            break;
-                        case 0x0D: // CR \r
-                            snprintf(tmp, 2, "r");
-                            break;
-                        default:
-                            snprintf(tmp, 2, ".");
-                            break;
-                    }
-                    dbufAppend(&dbuf, tmp, 2);
-                    dbufAppend(&dbuf, "\x1b[0m", 4);
                 }
                 free(tmp);
             }
@@ -189,7 +195,9 @@ void displayScreen(void){
         // just current position and number of lines.
         dbufAppend(&dbuf, "XX", 2);
     }
-    dbufAppend(&dbuf, "\r\n\x1b[0m", 6);
+    dbufAppend(&dbuf, "\r\n\x1b[0m\x1b[K", 9);
+    dbufAppend(&dbuf, msg, strlen(msg));
+    dbufAppend(&dbuf, "\x1b[0m", 6);
 
     /* status rows (1 of 2 rows) */
     // just pass

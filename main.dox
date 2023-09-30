@@ -1,0 +1,16 @@
+/**
+\mainpage hex editor
+\section whatisthis What is this?
+このプログラムは各種ファイルを16進数で編集することを目的としている。
+\n
+This program aims to edit any files in hexadecimal.
+
+\section howtouse How to use.
+\subsubsection basicuse Basically usage
+Run below command.
+@code % ./hex <FILENAME>  @endcode
+Note that <FILENAME> is required !!!
+
+\subsubsection options Options
+- -c [Colored] Some of no displayable characters will be colored.
+*/

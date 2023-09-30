@@ -22,9 +22,11 @@
 // #include <signal.h>
 #include <getopt.h>
 
-#include "terminalmode.h"
-#include "editorconfig.h"
-#include "terminalprint.h"
+#include "terminalmode.h"  // require no other files.
+#include "editorconfig.h"  // require no other files.
+#include "terminalprint.h" // require editorconfig.h
+#include "cursor.h"        // require editorconfig.h
+#include "editdata.h"      // require editorconfig.h and cursor.h
 
 enum KEYS{
     ESC    = 0x1B,
@@ -34,29 +36,7 @@ enum KEYS{
     DEL    = 0x7F,
     DEL_KEY, HOME_KEY, END_KEY,
     PAGE_UP, PAGE_DW,
-    ARR_UP, ARR_DW, ARR_RI, ARR_LE,
 };
-
-
-void moveCursor(int dir);
-
-
-
-/**
-* この関数はデータに文字を追加する。\n
-* This function is used to insert characters into the data.
-*
-* @param at 追加する位置を示す。\n The location of inserting.
-* @param ca 追加する文字バイト。\n The byte data of inserting character.
-*/
-void editorInsertByte(int at, unsigned int ca){
-    // printf("[called] editorInsertByte\n");
-
-    E.bytes = realloc(E.bytes, sizeof(BYTE) * (E.numbytes + 1));
-
-    E.bytes[at].c = ca;
-    E.numbytes++;
-}
 
 /**
 * この関数は編集するファイルを開き、メインデータを構築する。一度だけ実行される。\n
@@ -166,231 +146,47 @@ int keyInput(int fd){
     }
 }
 
-void editorSetStatusMessage(const char *msg){
-}
 
 /* 553 ======================= Editor rows implementation ======================= */
-
-/**
-* この関数はメインデータにデータを挿入する。挿入位置は EDITORCONFIG.idx から計算される。\n
-* This function will insert data. The position is calculated by EDITORCONFIG.idx.
-* @param c 挿入データ。\n Inserting data.
-*/
-void insertChar(int c){
-    /*
-
-     * idx 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-     *     01 23 45 67 89 ab cd ef 01 23 45 67 89 ab cd ef
-     *            ~~
-     *     if cursor is located right after '5', idx should be 3.
-
-     * idx 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
-     *     01 23 45 67 89 ab cd ef 01 23 45 67 89 ab cd ef
-
-     * cursor 0 : E.dx = 0
-     * cursor 1 : E.dx = 2 or 3
-     * cursor 2 : E.dx = 5 or 6
-     * cursor = (E.dx+1)/3 ...?
-     * E.dx max = 47
-     */
-
-    int idxCX = (E.rowoff + E.cy) * 3 * E.width + E.cx;
-    int idx = (idxCX+1)/3;
-
-    int hexHalf;
-
-    if(0x30 <= c && c <= 0x39){
-        hexHalf = c - 0x30;
-    }else if(0x61 <= c && c <= 0x66){
-        hexHalf = c - 0x57;
-    }else if(0x41 <= c && c <= 0x46){
-        hexHalf = c - 0x37;
-    }
-
-    if(E.idx > E.numbytes){
-        // This case should not be happned.
-        // ... and I think this case can not happen.
-        E.idx = E.numbytes;
-    }
-
-    if(E.editing){
-        // editing
-        int hexFull = E.bytes[E.idx-1].c + hexHalf;
-        E.bytes[E.idx-1].c = hexFull;
-        E.editing = 0;
-    }else{
-        // not editing.
-        memcpy(E.bytes+E.idx+1, E.bytes+E.idx, sizeof(BYTE)*(E.numbytes-idx));
-        editorInsertByte(E.idx, hexHalf*0x10);
-        if(E.cx == (3*E.width) - 1){
-            moveCursor(ARR_RI);
-        }
-        moveCursor(ARR_RI);
-        E.editing = 1;
-    }
-}
-
-/**
-* この関数はメインデータからデータを削除する。削除されるデータの位置は EDITORCONFIG.idx から計算される。\n
-* This function will delete data. The delete data will be calculated by EDITORCONFIG.idx.
-*/
-void deleteChar(void){
-    if(E.editing){
-        // editing.
-        memcpy(E.bytes+E.idx-1, E.bytes+E.idx, sizeof(BYTE)*(E.numbytes-E.idx));
-        E.numbytes--;
-        E.editing = 0;
-        moveCursor(ARR_LE);
-        if(E.idx % E.width == 0){
-            moveCursor(ARR_LE);
-        }
-    }else{
-        // not editing.
-        if(E.idx == 0){return;}
-        // moveCursor(ARR_LE);
-        E.bytes[E.idx-1].c = (E.bytes[E.idx-1].c / 0x10) * 0x10;
-        E.editing = 1;
-    }
-}
-
 /* 854 ============================= Terminal update ============================ */
-
-
-
 /* 1109 ========================= Editor events handling  ======================== */
 
-void moveCursor(int dir){
-    // printf("[called] moveCursor\r\n");
-
-    if(E.editing != 0){
-        return;
-    }
-
-    /*
-
-     * idx 0  1  2  3
-     *     01 23 45 67
-
-     * cursor 0 : E.dx = 0 or 1
-     * cursor 1 : E.dx = 2 or 3 or 4
-     * cursor 2 : E.dx = 5 or 6 or 7
-     * cursor 3 : E.dx = 8 or 9 or 10
-     * cursor = (E.dx+1)/3 ...?
-     * if(E.dx == 11){cursor will be 4; DO NOT MOVE THE CORSOR.}
-     * else{MOVE.}
-     */
-
-    int idxCX = (E.rowoff + E.cy) * 3 * E.width + E.cx;
-    int idx = (idxCX+1)/3;
-    int tmpRow = E.rowoff + E.cy;
-
-    switch (dir) {
-        case ARR_UP:
-            // printf("[called] moveCursor -> ARR_UP\r\n");
-            if(E.cy == 0){
-                if(E.rowoff != 0){
-                    E.idx -= E.width;
-                    E.rowoff--;
-                }else{
-                    E.idx = 0;
-                    E.rowoff = 0;
-                    E.cx = 0;
-                    E.cy = 0;
-                }
-            }else{
-                E.idx -= E.width;
-                E.cy--;
-            }
-            break;
-        case ARR_DW:
-            if(tmpRow == ((E.numbytes - 1) / E.width)){
-                E.idx = E.numbytes;
-                if(E.numbytes % E.width != 0){
-                    E.cx = 3 * (E.numbytes % E.width) - 1;
-                }else{
-                    E.cx = 3 * E.width - 1;
-                }
-            }else if(E.numbytes <= idx+E.width){
-                E.idx = E.numbytes;
-                E.cy++;
-                E.cx = 3 * (E.numbytes % E.width) - 1;
-            }else{
-                if(tmpRow < (E.numbytes / E.width)){
-                    E.idx += E.width;
-                    if(E.cy == E.screenrows - 1){
-                        E.rowoff++; // Scroll 1 line.
-                        // cursor position will NOT be changed.
-                    }else{
-                        E.cy++;
-                    }
-                }
-            }
-            break;
-        case ARR_RI:
-            // EOF
-            if(E.numbytes <= idx){
-                // EOF
-                // do NOTHING; do NOT allow to move cursor into the EOF or later bytes.
-            }else{
-                if(E.cx == (E.width*3)-1){
-                    // end of the line
-                    if(tmpRow == E.numbytes/E.width){
-                        // end of the file; the last row is filled.
-                    }else{
-                        // otherwise; the next (last) row has some bytes, but not filled.
-                        // E.idx will not be changed.
-                        E.cx = 0;
-                        E.cy++;
-                    }
-                }else{
-                    E.idx += 1;
-                    if(E.cx == 0){
-                        E.cx += 2;
-                    }else{
-                        E.cx += 3;
-                    }
-                }
-            }
-            break;
-        case ARR_LE:
-            if(idx <= 0){
-                // begin of the file; cursor can not move to left.
-            }else{
-                if(E.cx == 0){
-                    // begin of the line.
-                    if(tmpRow == 0){
-                        // begin of the file. (Can this case happen?)
-                    }else{
-                        // E.idx will not be changed.
-                        E.cx = (E.width*3)-1;
-                        E.cy--;
-                    }
-                }else{
-                    E.idx -= 1;
-                    E.cx -= 3;
-                    if(E.cx < 0){
-                        E.cx = 0;
-                    }
-                }
-            }
-            break;
-        default:
-            printf("\x1b[1m[!!!] Unexpected problem : E01\x1b[0m\r\n");
-    }
-}
-
-void keyProcess(int fd){
+/**
+* この関数はキー入力を処理する。\n
+* This function handles key inputs.
+* @param fd STDIN_FILENO
+* @param [out] msg ステータスメッセージを格納する変数。\n The variable which store the status message.
+*/
+void keyProcess(int fd, char* msg){
     // printf("[called] keyProcess\r\n");
     int c = keyInput(fd);
+    if(E.dirty){
+        memcpy(msg, "\x1b[7mCtrl-S\x1b[0m to save | \x1b[7mCtrl-Q\x1b[0m to quit (EDITED)", sizeof(char)*57);
+    }else{
+        memcpy(msg, "\x1b[7mCtrl-S\x1b[0m to save | \x1b[7mCtrl-Q\x1b[0m to quit", sizeof(char)*48);
+    }
     switch (c) {
         case CTRL_Q: // ^Q
-            exit(0);
+            if(E.dirty == 0){
+                exit(0);
+            }else{
+                if(E.quittimes == 1){
+                    exit(0);
+                }else{
+                    E.quittimes = 1;
+                    memcpy(msg, "Press Ctrl-Q again to quit. \x1b[1m(The changes have not been saved !!!)\x1b[0m", sizeof(char)*74);
+                }
+            }
+            break;
         case CTRL_S: // ^S
             editorSave();
+            E.dirty = 0;
+            memcpy(msg, "Saved!", sizeof(char)*7);
             break;
         case CTRL_X: // ^X
             break;
         case DEL:
+            E.dirty = 1;
             deleteChar();
             break;
         case ARR_UP:
@@ -401,8 +197,12 @@ void keyProcess(int fd){
         default:
             if((0x30 <= c && c <= 0x39) || (0x61 <= c && c <= 0x66)){
                 // 0-9, a-f (A-F is not included.)
+                E.dirty = 1;
                 insertChar(c);
             }
+    }
+    if(c != CTRL_Q){
+        E.quittimes = 0;
     }
 }
 
@@ -430,7 +230,7 @@ int main(int argc, char *argv[]){
     }
 
     if(argc < 2){
-        fprintf(stderr,"Usage: kilo <filename>\n");
+        fprintf(stderr,"Usage: ./hex <filename>\n");
         exit(1);
     }
 
@@ -438,9 +238,16 @@ int main(int argc, char *argv[]){
     enableRawMode(STDIN_FILENO);
     // editorSetStatusMessage()
 
+    char *msg = NULL;
+    msg = (char *)malloc(100);
+
+    memcpy(msg, "\x1b[7mCtrl-S\x1b[0m to save | \x1b[7mCtrl-Q\x1b[0m to quit", sizeof(char)*48);
+
+    displayScreen(msg);
+
     while(1){
-        displayScreen();
-        keyProcess(STDIN_FILENO);
+        keyProcess(STDIN_FILENO, msg);
+        displayScreen(msg);
     }
 
     return EXIT_SUCCESS;

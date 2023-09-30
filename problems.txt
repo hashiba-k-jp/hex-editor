@@ -10,8 +10,11 @@
 
 # 2
 行数表示がおかしい（行の最後の文字バイト+1したい）
+→直った?
 
-
+# 3
+最後の行で文字を追加すると表示が崩れる。
+→ editdata L76 でカーソル移動してるけど表示前(?)に移動していいのか?
 
 https://www.mathkuro.com/c-cpp/doxygen/#toc7
 file:///Users/Main/Desktop/CODE/editor/hex-editor/html/terminalprint_8h_source.html

@@ -4,6 +4,12 @@
 * @author HASHIBA Keishi
 */
 
+#include <termios.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+#include <getopt.h>
+
 /** In order to restore at exit.*/
 static struct termios orig_termios;
 

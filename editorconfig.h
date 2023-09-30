@@ -4,6 +4,11 @@
 * @author HASHIBA Keishi
 */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+
 /**
 * 本体データ配列を構成する基本データ。1文字を示す。\n
 * The basic data comprising the main data array. Includes only 1 character.
@@ -33,9 +38,12 @@ struct EDITORCONFIG {
     // struct editorSyntax *syntax;    /* Current syntax highlight, or NULL. */
     BYTE *bytes;        /**< メインデータ。 BYTE の列。\n The main data; Array of BYTE. */
 
+    int quittimes;      /**< Ctrl-Q が押された回数。\n The number of times Ctrl-Q pressed. */
     int width;          /**< 1行に表示するバイト(文字)数。\n number of bytes(characters) which are displayed in 1 row. */
     int editing;        /**< あるバイトが編集中であれば1、そうでなければ0。\n 1 means that a byte is being edited; otherwise 0. */ // 0 is false, otherwise are true;
     int idx;            /**< カーソルがある(画面ではなくメインデータ中の)位置。\n The position of cursor (of main data, not display) */
+
+    char *statusmsg;    /**< ステータスメッセージ。\n Status message.*/
 
     int dispascii; // 0 NO header, 1 header (list of ascii characters)
     int iscolored; // 0 NOT colored, 1 colored
@@ -100,6 +108,7 @@ void initEditor(void){
     // E.syntax = NULL;
     E.numbytes = 0;
 
+    E.quittimes = 0;
     E.editing   = 0;
     E.idx       = 0;
     E.dispascii = 0;

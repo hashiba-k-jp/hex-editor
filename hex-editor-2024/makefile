@@ -7,11 +7,12 @@ CC = gcc
 #include "cursor.h"        // require editorconfig.h
 #include "editdata.h"      // require editorconfig.h and cursor.h
 
-editor:hex.c terminalmode.h editorconfig.h terminalprint.h cursor.h editdata.h
-	$(CC) -Wall -save-temps -o hex hex.c
+# editor:hex.c terminalmode.h editorconfig.h terminalprint.h cursor.h editdata.h
+	# $(CC) -Wall -save-temps -o hex hex.c
 
-test:editor hex
-	./hex test.txt -c
+# test:editor hex
+test:
+	./ test.txt -c
 
 clean:
 	rm -f hex

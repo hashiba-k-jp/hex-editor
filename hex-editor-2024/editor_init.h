@@ -9,31 +9,32 @@
 * Being concerned with whole this editor, including display settings and main data.
 */
 struct EDITORCONFIG {
-    int cx;             /**< カーソルのx座標。\n Cursor x position in characters. */
-    int cy;             /**< カーソルのy座標。\n Cursor y position in characters. */
-    // int rowoff;         /**< 行オフセット。\n Offset of row displayed. */// ex. if rowoff = 3, the first 3 rows will not be displayed.
-    // int coloff;         /**< 列オフセット。\n Offset of column displayed. */
+    char *filename;     /**< 現在編集しているファイルの名前。\n The filename which is currently being edited. */
     int screenrows;     /**< 画面が表示できる最大行数。\n Number of rows that we can show */
     int screencols;     /**< 画面が表示できる最大列数。\n Number of columns that we can show */
     int numbytes;       /**< 本体データの長さ。bytesに含まれる BYTE の数に一致するべきである。\n The length of main data. This should equal to the number of BYTE in bytes. */
+    BYTE *bytes;        /**< メインデータ。 BYTE の列。\n The main data; Array of BYTE. */
+
+    // int cx;             /**< カーソルのx座標。\n Cursor x position in characters. */
+    // int cy;             /**< カーソルのy座標。\n Cursor y position in characters. */
+    // int rowoff;         /**< 行オフセット。\n Offset of row displayed. */// ex. if rowoff = 3, the first 3 rows will not be displayed.
+    // int coloff;         /**< 列オフセット。\n Offset of column displayed. */
     // int rawmode;     /* Is terminal raw mode enabled? */
     // erow *row;       /* Rows */
     int dirty;          /**< ファイルが編集されているが保存されてない場合は1、そうでなければ0。\n 1 means that the file is modified but not saved; otherwise 0. */ // 0 means the file has not beem modified, otherwise means modified.
-    char *filename;     /**< 現在編集しているファイルの名前。\n The filename which is currently being edited. */
     // char statusmsg[80];
     // time_t statusmsg_time;
     // struct editorSyntax *syntax;    /* Current syntax highlight, or NULL. */
-    BYTE *bytes;        /**< メインデータ。 BYTE の列。\n The main data; Array of BYTE. */
 
-    int quittimes;      /**< Ctrl-Q が押された回数。\n The number of times Ctrl-Q pressed. */
-    int width;          /**< 1行に表示するバイト(文字)数。\n number of bytes(characters) which are displayed in 1 row. */
-    int editing;        /**< あるバイトが編集中であれば1、そうでなければ0。\n 1 means that a byte is being edited; otherwise 0. */ // 0 is false, otherwise are true;
-    int idx;            /**< カーソルがある(画面ではなくメインデータ中の)位置。\n The position of cursor (of main data, not display) */
+    // int quittimes;      /**< Ctrl-Q が押された回数。\n The number of times Ctrl-Q pressed. */
+    // int width;          /**< 1行に表示するバイト(文字)数。\n number of bytes(characters) which are displayed in 1 row. */
+    // int editing;        /**< あるバイトが編集中であれば1、そうでなければ0。\n 1 means that a byte is being edited; otherwise 0. */ // 0 is false, otherwise are true;
+    // int idx;            /**< カーソルがある(画面ではなくメインデータ中の)位置。\n The position of cursor (of main data, not display) */
 
-    char *statusmsg;    /**< ステータスメッセージ。\n Status message.*/
+    // char *statusmsg;    /**< ステータスメッセージ。\n Status message.*/
 
-    int dispascii; // 0 NO header, 1 header (list of ascii characters)
-    int iscolored; // 0 NOT colored, 1 colored
+    // int dispascii; // 0 NO header, 1 header (list of ascii characters)
+    // int iscolored; // 0 NOT colored, 1 colored
 };
 
 struct EDITORCONFIG E;

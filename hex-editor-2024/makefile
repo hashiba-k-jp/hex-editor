@@ -1,22 +1,13 @@
 # Makefile
-CC = gcc
+CC = clang
+OUTNAME = hex
 
-#include "terminalmode.h"  // require no other files.
-#include "editorconfig.h"  // require no other files.
-#include "terminalprint.h" // require editorconfig.h
-#include "cursor.h"        // require editorconfig.h
-#include "editdata.h"      // require editorconfig.h and cursor.h
+editor: hex.c config.h terminalMode.h keys.h
+	# https://qiita.com/kaityo256/items/80863d466e0d69808eb9
+	$(CC) -o $(OUTNAME) hex.c -lncurses
 
-# editor:hex.c terminalmode.h editorconfig.h terminalprint.h cursor.h editdata.h
-	# $(CC) -Wall -save-temps -o hex hex.c
-
-# test:editor hex
-test:
-	./ test.txt -c
+test:editor hex
+	./hex
 
 clean:
-	rm -f hex
-	rm -f hex.bc
-	rm -f hex.i
-	rm -f hex.o
-	rm -f hex.s
+	rm -f $(OUTNAME)

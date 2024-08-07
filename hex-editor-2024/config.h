@@ -6,11 +6,18 @@ typedef struct {
     char *filename;
     bool isColored;
     struct winsize ws; // defined in <sys/ioctl.h>
-    struct winsize cpos; // Cursor POSition
+    int curr_row; // CURRent row
+    int curr_col; // CURRent row
     bool isEdited;
+    // int status; // EDITOR_STATUS
     // struct termios COOKED_MODE;
     // struct termios RAW_MODE;
 }EDITOR;
+
+// enum EDITOR_STATUS{
+//     EDITING,
+//     SAVING,
+// };
 
 EDITOR init_editor(void){
     EDITOR EDITOR;
@@ -18,54 +25,47 @@ EDITOR init_editor(void){
     EDITOR.filename     = NULL;
     EDITOR.isColored    = NULL;
     EDITOR.isEdited     = false;
+    EDITOR.curr_row     = 0;
+    EDITOR.curr_col     = 0;
 
-    int c_row = 0;
-    int c_col = 0;
-
-    int len;
+    int len = 0;
 
     char buf[32];
-
-    char *cpos;
-    if((len = write(STDOUT_FILENO, "\x1b[6n", 4)) == -1){
-        err(len, "Failed to get current cursor position.");
-    }
-    // cpos has format or "ESC[#;#R".
-
     int i = 0;
-    int read_len;
-    for (i = 0; i < len; i++){
-        printf("[DEBUG] c_row is %d, %d\n", c_row, i);
-        if((read_len = read(STDOUT_FILENO, buf+i, 1)) != 1){
-            errno = read_len;
-            err(errno, "Failed to parse string to int (current cursor row position).");
-        }
-        // if(buf[i] >= 0x30 && buf[i] <= 0x39){
-        //     c_row *= 0x0a;
-        //     c_row += (buf[i] - 0x30);
-        // }else if(buf[i] == ';'){
-        //     break;
-        // }else{
-        //     i++;
-        // }
-    }
-    printf("[DEBUG] c_row is %d\n", c_row);
-    // for (i = 0; ; i++){
-    //     if((read_len = read(STDIN_FILENO, buf+i, 1)) != 1){
-    //         errno = read_len;
-    //         err(errno, "Failed to parse string to int (current cursor row position).");
-    //     }
-    //     if(buf[i] >= 0x30 && buf[i] <= 0x39){
-    //         c_col *= 0x0a;
-    //         c_col += (buf[i] - 0x30);
-    //     }else if(buf[i] == ';'){
-    //         break;
-    //     }else{
-    //         i++;
-    //     }
-    // }
 
-    // printf("[debug] %d, %d\n\n", c_row, c_col);
+
+    if((len = write(STDOUT_FILENO, "\x1b[6n", 4)) == 4){ // successed to get cursor position.
+        // e.g. [23;3R
+        while (i < sizeof(buf) - 1) {
+            if(read(STDIN_FILENO, buf+i, 1) != 1){
+                err(-1, "Unexpected character.");
+            }
+            if(buf[i] == 'R'){
+                 break;
+            }
+            i++;
+        }
+        buf[i] = '\0';
+        if (buf[0] != '\x1b' || buf[1] != '['){
+            err(buf[0], "Invalid value of current cursor position.");
+        }
+        if(sscanf(buf+2,"%d;%d", &EDITOR.curr_row, &EDITOR.curr_col) != 2){
+            err(-1, "Failed to parse the value of current cursor position.");
+        }
+    }else{
+        err(-1, "Failed to get current cursor position.");
+    }
+
+    /* Parse it. */
+    // if (buf[0] != '\x1b' || buf[1] != '['){
+    //     err(-1, "Failed to get current cursor position. 2");
+    // };
+    // if (sscanf(buf+2,"%d;%d", &c_row, &c_col) != 2){
+    //     err(-1, "Failed to get current cursor position. 3");
+    // };
+
+    printf("[debug] %d, %d\r\n", EDITOR.curr_row, EDITOR.curr_col);
+
 
 
     int succ_get_winsize;

@@ -13,13 +13,14 @@
 // #include <ctype.h>
 // #include <getopt.h>
 
-#include <unistd.h>  // getopt(), write(), read(), STD{IN, OUT}_FILENO
+#include <unistd.h>  // getopt(), write(), read(), STD{IN, OUT}_FILENO, access()
 #include <err.h>    // warn(), err(),
 #include <errno.h>  // errno,
 #include <sys/ioctl.h>  // struct insize,
 #include <termios.h>    // struct termios,
 #include <stdlib.h> // atexit(),
 #include <string.h> // memcmp(),
+#include <fcntl.h> // open(), O_RDONLY,...
 // #include <ncurses.h>    // ncurses:initscr(),
 
 
@@ -32,35 +33,83 @@ int keyInput();
 
 int main(int argc, char *argv[]){
 
+    /* PHASE 1 : SAVE COOKED MODE AND SWITCH TO RAW MODE */
     // struct termios COOKED_MODE;
     atexit(fin_program);
     save_cooked_mode();
     switch_raw_mode();
 
+    /* PHASE 2 : INITIALIZE THE EDITOR */
     EDITOR EDITOR = init_editor();
 
-    int ch;
-    while ((ch = getopt(argc, argv, "i:cm")) != -1) {
+    /* PHASE 3 : PARSE OPTIONS */
+    char ch;
+    while ((ch = getopt(argc, argv, "i:ch")) != -1) {
+        /* if the optarg is NULL, getput will return '?' */
         switch (ch) {
             case 'c':
                 EDITOR.isColored = true;
                 break;
             case 'i':
-                if(EDITOR.filename == NULL){
-                    EDITOR.filename = optarg;
-                }else{
-                    warn("[WARN]too many input files; run \"%s -m\" to read manual.", argv[0]);
+                if(EDITOR.filename != NULL){
+                    warn("[WARN] The former input file path will overwritten.\r\n");
                 }
+                EDITOR.filename = optarg;
                 break;
-            case 'm':
+            case 'h':
                 print_usage();
                 return 0;
+            case '?':
+                printf("\r\nInvalid option {%c}, option \x1b[1m\x1b[31m-h\x1b[m to show usage.\r\n", ch);
+                break;
+            default:
+                err(-1, "Failed to load options...\r\n");
         }
     }
 
-    // printf("[DEBUG] FILENAME : %s\n", EDITOR.filename);
-    // printf("[DEBUG] ROW : %d\r\n", EDITOR.ws.ws_row);
-    // printf("[DEBUG] COL : %d\r\n", EDITOR.ws.ws_col);
+    /* PHASE 4 (optional) : CHECK WHETEHR THE INPUT FILE EXISTS OR NOT */
+    /*
+        - If the file exists ->
+            - File reading is permitted -> just read the file.
+            - NOT permitted             -> raise error.
+        - does NOT exist                -> create new file.
+    */
+    if(EDITOR.filename != NULL){
+        int file_check;
+        /* Return 0 if the file exists, even if some permissions are denied. */
+        file_check = access(EDITOR.filename, F_OK);
+        switch (file_check) {
+            case 0: /* file exists */
+                if((file_check = access(EDITOR.filename, R_OK)) == -1){
+                    err(file_check, "Cannot read the input file %s", EDITOR.filename);
+                };
+                EDITOR.fd = open(EDITOR.filename, O_RDONLY);
+                break;
+            case -1: /* file does NOT exist */
+                /* S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH -> chmod 644 */
+                EDITOR.fd = open(EDITOR.filename, O_CREAT, (S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH));
+                break;
+        }
+    }
+
+    /* PHASE 5 (optional) : READ THE FILE (if fd is NOT null.) */
+    /*
+        separete the file into several blocks.
+    */
+    /* get file zise. */
+    const int BLOCK_SIZE = 0x800;
+    int filesize = -1;
+    if(EDITOR.fd != -1){
+        filesize = lseek(EDITOR.fd, 0, SEEK_END);
+    }else{
+        filesize = 0;
+    }
+    printf("[debug] file size is %d\r\n", filesize);
+
+
+
+
+
 
     char *msg;
     int input_c;
@@ -115,26 +164,26 @@ int keyInput(){
             switch(seq[0]){
                 case TAB:
                     // printf("[debug]TAB\r\n");
-                    return seq[0];
+                    // return seq[0];
                 case CTRL_G:
                     // printf("[debug]CTRL_G\r\n");
-                    return seq[0];
+                    // return seq[0];
                 case CTRL_Q:
                     // printf("[debug]CTRL_Q\r\n");
-                    return seq[0];
+                    // return seq[0];
                 case CTRL_S:
                     // printf("[debug]CTRL_S\r\n");
-                    return seq[0];
+                    // return seq[0];
                 case CTRL_X:
                     // printf("[debug]CTRL_X\r\n");
-                    return seq[0];
+                    // return seq[0];
                 case ESC:
                     // printf("[debug]ESC\r\n");
                     return seq[0];
                     break;
                 default:
                     printf("[debug]UNEXPECTED KEY\r\n");
-                    return 0x00;
+                    return UNEXPECTED;
             }
         }
     }else if(read_len == 3){

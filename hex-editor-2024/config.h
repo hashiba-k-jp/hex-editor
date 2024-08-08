@@ -2,17 +2,39 @@
 #include "func.h"
 // Here, the functions which are run only once.
 
+struct EDITOR;
+struct DATABLOCK;
+struct DATA;
+
 typedef struct {
     char *filename;
+    int fd;             // file descriptor for the input file.
     bool isColored;
-    struct winsize ws; // defined in <sys/ioctl.h>
-    int curr_row; // CURRent row
-    int curr_col; // CURRent row
+    struct winsize ws;  // defined in <sys/ioctl.h>
+    int curr_row;       // CURRent row
+    int curr_col;       // CURRent row
     bool isEdited;
+
+    struct DATABLOCK head_block;
+
     // int status; // EDITOR_STATUS
     // struct termios COOKED_MODE;
     // struct termios RAW_MODE;
 }EDITOR;
+
+typedef struct{
+    struct DATABLOCK *next_block;
+    struct DATABLOCK *prev_block;
+    struct BLOCK *head;
+    struct BLOCK *tail;
+    int block_size;
+}DATABLOCK;
+
+typedef struct{ // [todo] 4-bit or 8-bit ?
+    unsigned char data; /* 0x00 - 0xFF */
+    struct DATA next;
+    struct DATA prev;
+}DATA;
 
 // enum EDITOR_STATUS{
 //     EDITING,
@@ -23,6 +45,7 @@ EDITOR init_editor(void){
     EDITOR EDITOR;
 
     EDITOR.filename     = NULL;
+    EDITOR.fd           = -1;
     EDITOR.isColored    = NULL;
     EDITOR.isEdited     = false;
     EDITOR.curr_row     = 0;
@@ -56,17 +79,7 @@ EDITOR init_editor(void){
         err(-1, "Failed to get current cursor position.");
     }
 
-    /* Parse it. */
-    // if (buf[0] != '\x1b' || buf[1] != '['){
-    //     err(-1, "Failed to get current cursor position. 2");
-    // };
-    // if (sscanf(buf+2,"%d;%d", &c_row, &c_col) != 2){
-    //     err(-1, "Failed to get current cursor position. 3");
-    // };
-
-    printf("[debug] %d, %d\r\n", EDITOR.curr_row, EDITOR.curr_col);
-
-
+    // printf("[debug] %d, %d\r\n", EDITOR.curr_row, EDITOR.curr_col);
 
     int succ_get_winsize;
     if ((succ_get_winsize = ioctl(1, TIOCGWINSZ, &EDITOR.ws)) != 0){

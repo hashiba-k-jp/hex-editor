@@ -9,6 +9,8 @@ enum KEYS{
     DEL    = 0x7F,
     RET    = 0x0D, // RETURN (ENTER)
 
+    UNEXPECTED,
+
 
     // DEL_KEY, HOME_KEY, END_KEY,
     // PAGE_UP, PAGE_DW,

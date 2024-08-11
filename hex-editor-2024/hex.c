@@ -27,17 +27,27 @@
 #include "config.h"
 #include "terminalMode.h"
 #include "keys.h"
+#include "file.h"
+#include "screen.h"
 
-int keyProcess(int c, char* msg, EDITOR EDITOR);
+int keyProcess(int c, char* msg, EDITOR *EDITOR);
 int keyInput();
 
 int main(int argc, char *argv[]){
 
-    /* PHASE 1 : SAVE COOKED MODE AND SWITCH TO RAW MODE */
+    /* PHASE 1-1 : SAVE COOKED MODE AND SWITCH TO RAW MODE */
     // struct termios COOKED_MODE;
     atexit(fin_program);
     save_cooked_mode();
     switch_raw_mode();
+
+    /* PHASE 1-2 : DISABLE BUFFER OF PRINTF */
+    /* _IONBF : unbufferd */
+    int vbuf_status = setvbuf(stdout, NULL, _IONBF, 0);
+    if(vbuf_status != 0){
+        err(vbuf_status, "Failed to disable buffer of standard output.");
+    }
+
 
     /* PHASE 2 : INITIALIZE THE EDITOR */
     EDITOR EDITOR = init_editor();
@@ -96,45 +106,107 @@ int main(int argc, char *argv[]){
     /*
         separete the file into several blocks.
     */
-    /* get file zise. */
-    const int BLOCK_SIZE = 0x800;
-    int filesize = -1;
+    /* at first, get file zise. (This may not needed.) */
+    // const int BLOCK_SIZE = 0x800;
     if(EDITOR.fd != -1){
-        filesize = lseek(EDITOR.fd, 0, SEEK_END);
+        EDITOR.filesize = lseek(EDITOR.fd, 0, SEEK_END);
+        lseek(EDITOR.fd, 0, SEEK_SET); /* Set the offset at the head of the file. */
     }else{
-        filesize = 0;
+        EDITOR.filesize = 0;
     }
-    printf("[debug] file size is %d\r\n", filesize);
+    // printf("[debug] file size is %d\r\n", EDITOR.filesize);
 
+    if(EDITOR.fd != -1){
+        if(read_file(&EDITOR) == -1){
+            err(-1, "Failed to read files or construct the data structres...");
+        }
+    }
 
+    init_screen(&EDITOR);
 
-
-
+    char *header = header_msg(&EDITOR);
+    char **footer = footer_msg(&EDITOR);
 
     char *msg;
     int input_c;
     int res_process;
 
     while(1){
+        print_screen(&EDITOR, header, footer);
         input_c = keyInput();
-        // printf("[DEBUG:input_c]%d\r\n", input_c);
-        res_process = keyProcess(input_c, msg, EDITOR);
+        res_process = keyProcess(input_c, msg, &EDITOR);
     }
 
     return 0;
 }
 
-int keyProcess(int c, char* msg, EDITOR EDITOR){
+
+enum move_dir{ DIR_NEXT, DIR_PREV };
+void _move_cursor(EDITOR *EDITOR, int diff, int move_dir){
+    T_DATA *tmp;
+    if(move_dir == DIR_NEXT){
+        for(int i = 0; i < diff; i++){
+            if((tmp = EDITOR->cursor->point->next) == NULL){
+                break;
+            }else{
+                EDITOR->cursor->point = tmp;
+            }
+        }
+    }else if(move_dir == DIR_PREV){
+        for(int i = 0; i < diff; i++){
+            if((tmp = EDITOR->cursor->point->prev) == NULL){
+                break;
+            }else{
+                EDITOR->cursor->point = tmp;
+            }
+        }
+    }
+};
+
+int keyProcess(int c, char* msg, EDITOR *EDITOR){
+    // if(EDITOR->cursor->editing){
+    //     if((0x30 <= c && c <= 0x39) || (0x41 <= c && c <= 0x46) || (0x61 <= c && c <= 0x66)){
+    //         EDITOR->cursor->point->data = EDITOR->cursor->point->data|(0x000F & c);
+    //         EDITOR->cursor->editing = false;
+    //     }
+    // }else{
+    //     if((0x30 <= c && c <= 0x39) || (0x41 <= c && c <= 0x46) || (0x61 <= c && c <= 0x66)){
+    //         T_DATA *insert = malloc(sizeof(T_DATA));
+    //         insert->data = (c&0x000F)<<4;
+    //
+    //         EDITOR->cursor->point->next->prev = insert;
+    //         insert->next = EDITOR->cursor->point->next;
+    //         EDITOR->cursor->point->next = insert;
+    //         insert->prev = EDITOR->cursor->point->next;
+    //         EDITOR->cursor->point = insert;
+    //         EDITOR->cursor->editing = true;
+    //     }
+    // }
+
+
+
     switch (c) {
         case CTRL_Q:
             // [Todo] Save or not.
-            if(EDITOR.isEdited){
+            if(EDITOR->isEdited){
 
             }else{
                 exit(EXIT_SUCCESS);
             }
             break;
 
+        case ARR_UP:
+            _move_cursor(EDITOR, EDITOR->line_size, DIR_PREV);
+            break;
+        case ARR_DW:
+            _move_cursor(EDITOR, EDITOR->line_size, DIR_NEXT);
+            break;
+        case ARR_RI:
+            _move_cursor(EDITOR, 1, DIR_NEXT);
+            break;
+        case ARR_LE:
+            _move_cursor(EDITOR, 1, DIR_PREV);
+            break;
     }
     return 1;
 }
@@ -157,7 +229,7 @@ int keyInput(){
 
     if(read_len == 1){
         if(0x20 <= seq[0] && seq[0] <= 0x7F){
-            printf("%c\n", seq[0]);
+            // printf("%c", seq[0]);
             fflush(stdout); // THIS IS NECESSARY IN ORDER TO PRINT IMMEDIATELY
             return seq[0];
         }else{

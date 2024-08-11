@@ -9,7 +9,26 @@ enum KEYS{
     DEL    = 0x7F,
     RET    = 0x0D, // RETURN (ENTER)
 
+    KEY0   = 0xFF00,
+    KEY1   = 0xFF01,
+    KEY2   = 0xFF02,
+    KEY3   = 0xFF03,
+    KEY4   = 0xFF04,
+    KEY5   = 0xFF05,
+    KEY6   = 0xFF06,
+    KEY7   = 0xFF07,
+    KEY8   = 0xFF08,
+    KEY9   = 0xFF09,
+    KEYA   = 0xFF0A,
+    KEYB   = 0xFF0B,
+    KEYC   = 0xFF0C,
+    KEYD   = 0xFF0D,
+    KEYE   = 0xFF0E,
+    KEYF   = 0xFF0F,
+
     UNEXPECTED,
+
+    C_DEFAULT = 0xFF01,
 
 
     // DEL_KEY, HOME_KEY, END_KEY,

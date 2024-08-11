@@ -2,39 +2,36 @@
 #include "func.h"
 // Here, the functions which are run only once.
 
-struct EDITOR;
-struct DATABLOCK;
-struct DATA;
 
-typedef struct {
+struct editor{
     char *filename;
     int fd;             // file descriptor for the input file.
     bool isColored;
-    struct winsize ws;  // defined in <sys/ioctl.h>
+    struct winsize *ws;  // defined in <sys/ioctl.h>
     int curr_row;       // CURRent row
     int curr_col;       // CURRent row
+    int filesize;
     bool isEdited;
+    int line_size;
 
-    struct DATABLOCK head_block;
+    // struct datablock *head_block;
+    struct t_data *head_data;
+    struct t_cursor *cursor;
 
-    // int status; // EDITOR_STATUS
-    // struct termios COOKED_MODE;
-    // struct termios RAW_MODE;
-}EDITOR;
+    int curr_footer_status;
+    int prev_footer_status;
 
-typedef struct{
-    struct DATABLOCK *next_block;
-    struct DATABLOCK *prev_block;
-    struct BLOCK *head;
-    struct BLOCK *tail;
-    int block_size;
-}DATABLOCK;
+    unsigned int msgStatus;
 
-typedef struct{ // [todo] 4-bit or 8-bit ?
-    unsigned char data; /* 0x00 - 0xFF */
-    struct DATA next;
-    struct DATA prev;
-}DATA;
+};
+
+// typedef struct datablock{
+//     struct datablock *next_block;
+//     struct datablock *prev_block;
+//     struct t_data *head;
+//     struct t_data *tail;
+//     int block_size;
+// }DATABLOCK;
 
 // enum EDITOR_STATUS{
 //     EDITING,
@@ -46,10 +43,13 @@ EDITOR init_editor(void){
 
     EDITOR.filename     = NULL;
     EDITOR.fd           = -1;
+    EDITOR.ws           = malloc(sizeof(struct winsize));
     EDITOR.isColored    = NULL;
+    EDITOR.filesize     = -1;
     EDITOR.isEdited     = false;
     EDITOR.curr_row     = 0;
     EDITOR.curr_col     = 0;
+    EDITOR.msgStatus    = 0b00000000;
 
     int len = 0;
 
@@ -88,14 +88,14 @@ EDITOR init_editor(void){
     return EDITOR;
 }
 
-// void init_screen(void){
-//     initscr();
-// }
-
 void print_usage(void){
     printf("usage:\n");
 }
 
-void fin_program(void){
+void fin_program(){
+    // printf("\x1B[0;0H");
+    printf("\x1B[%d;%dH", 40, 0);
+    // printf("")
+    // printf("\x1B[%dT", 30);
     switch_cooked_mode();
 }

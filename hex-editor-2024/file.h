@@ -57,3 +57,14 @@ int read_file(EDITOR *EDITOR){
     return 0;
     /* if failed to read file, but err did not occur, this function should return -1. */
 }
+
+int save_file(EDITOR *EDITOR){
+    // [todo] ファイルの保存
+    // 指針としては
+    // 1. uuidなどで衝突しないファイルを別名で作成
+    // 2. 保存できた場合には
+    // 3. 元のファイルを削除してファイル名の変更
+    // こんな感じ？
+    // ここでファイルのアクセス権限に注意!
+    return -2;
+}

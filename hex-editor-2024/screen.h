@@ -109,6 +109,10 @@ void init_screen(EDITOR *EDITOR){
 }
 
 void print_screen(EDITOR *EDITOR, char *header, char **footer){
+    // [todo] 実行時間がやけに遅い
+    // データ構造を根本的に変える必要がありそう？
+    // 例えばある程度の大きさの配列にしてmemcpyすりゃforなり->nextなりの必要はなくなる。
+    // しかしそうするとinsert/deleteの時にmemmovとか必要になりそう?
     printf("\x1B[0;0H");
 
     printf("%s\r\n", header);

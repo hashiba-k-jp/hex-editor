@@ -30,9 +30,6 @@
 #include "file.h"
 #include "screen.h"
 
-int keyProcess(int c, char* msg, EDITOR *EDITOR);
-int keyInput();
-
 int main(int argc, char *argv[]){
 
     /* PHASE 1-1 : SAVE COOKED MODE AND SWITCH TO RAW MODE */
@@ -126,6 +123,7 @@ int main(int argc, char *argv[]){
 
     char *header = header_msg(&EDITOR);
     char **footer = footer_msg(&EDITOR);
+    // char **footer;
 
     char *msg;
     int input_c;
@@ -134,7 +132,8 @@ int main(int argc, char *argv[]){
     while(1){
         print_screen(&EDITOR, header, footer);
         input_c = keyInput();
-        res_process = keyProcess(input_c, msg, &EDITOR);
+        // printf("[debug] input_c = %x\r\n", input_c);
+        res_process = keyProcess(input_c, msg, &EDITOR, footer);
     }
 
     return 0;
@@ -163,27 +162,39 @@ void _move_cursor(EDITOR *EDITOR, int diff, int move_dir){
     }
 };
 
-int keyProcess(int c, char* msg, EDITOR *EDITOR){
-    // if(EDITOR->cursor->editing){
-    //     if((0x30 <= c && c <= 0x39) || (0x41 <= c && c <= 0x46) || (0x61 <= c && c <= 0x66)){
-    //         EDITOR->cursor->point->data = EDITOR->cursor->point->data|(0x000F & c);
-    //         EDITOR->cursor->editing = false;
-    //     }
-    // }else{
-    //     if((0x30 <= c && c <= 0x39) || (0x41 <= c && c <= 0x46) || (0x61 <= c && c <= 0x66)){
-    //         T_DATA *insert = malloc(sizeof(T_DATA));
-    //         insert->data = (c&0x000F)<<4;
-    //
-    //         EDITOR->cursor->point->next->prev = insert;
-    //         insert->next = EDITOR->cursor->point->next;
-    //         EDITOR->cursor->point->next = insert;
-    //         insert->prev = EDITOR->cursor->point->next;
-    //         EDITOR->cursor->point = insert;
-    //         EDITOR->cursor->editing = true;
-    //     }
-    // }
+int keyProcess(int c, char* msg, EDITOR *EDITOR, char **footer){
+    int res = -99;
+    if(EDITOR->cursor->editing){
+        if(KEY0 <= c && c <= KEYF){ /* [0-9a-fA-F] */
+            // EDITOR->cursor->point->data = EDITOR->cursor->point->data|(0x000F & c);
+            EDITOR->cursor->point->data = EDITOR->cursor->point->data|(0x00FF & c);
+            EDITOR->cursor->editing = false;
+        }else{ /* other key input */
+        }
+    }else{
+        if(KEY0 <= c && c <= KEYF){
 
+            T_DATA *insert = malloc(sizeof(T_DATA));
+            // insert->data = (c&0x000F)<<4;
+            insert->data = (c&0x00FF)<<4;
 
+            EDITOR->cursor->point->next->prev = insert;
+            insert->next = EDITOR->cursor->point->next;
+            EDITOR->cursor->point->next = insert;
+            insert->prev = EDITOR->cursor->point->next;
+            EDITOR->cursor->point = insert;
+            EDITOR->cursor->editing = true;
+        }else{
+            switch (c) {
+                case CTRL_Q:
+                    exit(EXIT_SUCCESS);
+                    break;
+                case CTRL_S:
+                    res = save_file(EDITOR);
+            }
+
+        }
+    }
 
     switch (c) {
         case CTRL_Q:
@@ -216,7 +227,8 @@ int keyInput(){
     // output : key number defined in keys.h (NOT ascii code)
 
     int read_len; // s means Status
-    char c, seq[4];
+    char seq[4];
+    int c;
 
     while((read_len = read(STDIN_FILENO, &seq, 4)) == 0){
         // pass; This while waits any input.
@@ -228,29 +240,23 @@ int keyInput(){
     // printf("[[%d %x %x %x %x]]", read_len, seq[0], seq[1], seq[2], seq[3]);
 
     if(read_len == 1){
-        if(0x20 <= seq[0] && seq[0] <= 0x7F){
-            // printf("%c", seq[0]);
-            fflush(stdout); // THIS IS NECESSARY IN ORDER TO PRINT IMMEDIATELY
-            return seq[0];
+        if(0x30 <= seq[0] && seq[0] <= 0x39){ /* 0-9 */
+            c = seq[0]+0xD0;
+            return c;
+        }else if(0x61 <= seq[0] && seq[0] <= 0x66){ /* a-f */
+            c = seq[0]+0xA9;
+            return c;
+        }else if(0x41 <= seq[0] && seq[0] <= 0x46){ /* A-F */
+            c = seq[0]+0xC9;
+            return c;
         }else{
             switch(seq[0]){
                 case TAB:
-                    // printf("[debug]TAB\r\n");
-                    // return seq[0];
                 case CTRL_G:
-                    // printf("[debug]CTRL_G\r\n");
-                    // return seq[0];
                 case CTRL_Q:
-                    // printf("[debug]CTRL_Q\r\n");
-                    // return seq[0];
                 case CTRL_S:
-                    // printf("[debug]CTRL_S\r\n");
-                    // return seq[0];
                 case CTRL_X:
-                    // printf("[debug]CTRL_X\r\n");
-                    // return seq[0];
                 case ESC:
-                    // printf("[debug]ESC\r\n");
                     return seq[0];
                     break;
                 default:

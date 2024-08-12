@@ -82,7 +82,7 @@ EDITOR init_editor(void){
     // printf("[debug] %d, %d\r\n", EDITOR.curr_row, EDITOR.curr_col);
 
     int succ_get_winsize;
-    if ((succ_get_winsize = ioctl(1, TIOCGWINSZ, &EDITOR.ws)) != 0){
+    if ((succ_get_winsize = ioctl(1, TIOCGWINSZ, EDITOR.ws)) != 0){
         err(succ_get_winsize, "[ERROR] Failed to get window size.");
     }
     return EDITOR;

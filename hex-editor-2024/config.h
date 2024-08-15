@@ -1,30 +1,3 @@
-
-#include "func.h"
-// Here, the functions which are run only once.
-
-
-struct editor{
-    char *filename;
-    int fd;             // file descriptor for the input file.
-    bool isColored;
-    struct winsize *ws;  // defined in <sys/ioctl.h>
-    int curr_row;       // CURRent row
-    int curr_col;       // CURRent row
-    int filesize;
-    bool isEdited;
-    int line_size;
-
-    // struct datablock *head_block;
-    struct t_data *head_data;
-    struct t_cursor *cursor;
-
-    int curr_footer_status;
-    int prev_footer_status;
-
-    unsigned int msgStatus;
-
-};
-
 // typedef struct datablock{
 //     struct datablock *next_block;
 //     struct datablock *prev_block;

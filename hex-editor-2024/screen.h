@@ -1,7 +1,3 @@
-#include "func.h"
-
-// #include <string.h>
-
 enum msgStatus{
     s_dafault   = 0b00000000,
     saved       = 0b00000001,

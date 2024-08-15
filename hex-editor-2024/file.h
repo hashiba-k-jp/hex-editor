@@ -1,20 +1,3 @@
-#include "func.h"
-
-struct t_data{ // [todo] 4-bit or 8-bit ?
-    /* 0x00-0xFF */
-    unsigned char data;
-
-    // unsigned long long data; /* 0x00 - 0xFFFFFFFFFFFFFFFF */
-    struct t_data *next;
-    struct t_data *prev;
-};
-
-struct t_cursor{
-    struct t_data *point;
-    bool editing;
-    bool head; /* true if cursor == EDITOR.head_data */
-};
-
 /* This function may be called only once. */
 int read_file(EDITOR *EDITOR){
     EDITOR->cursor = malloc(sizeof(T_CURSOR));

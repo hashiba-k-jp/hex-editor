@@ -23,6 +23,7 @@
 #include <fcntl.h> // open(), O_RDONLY,...
 // #include <ncurses.h>    // ncurses:initscr(),
 
+#include "header.h"
 
 #include "config.h"
 #include "terminalMode.h"

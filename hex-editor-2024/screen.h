@@ -5,7 +5,6 @@ enum msgStatus{
     quitting    = 0b00000100,
 };
 
-
 char *header_msg(EDITOR *EDITOR){
     char *tmp;
     int len = EDITOR->ws->ws_col;
@@ -105,27 +104,39 @@ void init_screen(EDITOR *EDITOR){
 }
 
 void print_screen(EDITOR *EDITOR, char *header, char **footer){
+
+    // [todo] printfの回数を減らす
+    char *line_buf = malloc(sizeof(char)*EDITOR->ws->ws_col);
+
     // [todo] 実行時間がやけに遅い
     // データ構造を根本的に変える必要がありそう？
     // 例えばある程度の大きさの配列にしてmemcpyすりゃforなり->nextなりの必要はなくなる。
     // しかしそうするとinsert/deleteの時にmemmovとか必要になりそう?
-    printf("\x1B[0;0H");
-
-    printf("%s\r\n", header);
+    // printf("\x1B[0;0H");
+    // printf("%s\r\n", header);
+    printf("\x1B[0;0H%s\r\n", header);
 
     EDITOR->line_size = ((EDITOR->ws->ws_col-19) / 24)*8;
     int line_i = 0;
     int col_inline = 0;
     int curr_row, curr_col;
+    bool already_located = false;
 
     unsigned char *buf = malloc(sizeof(char)*EDITOR->line_size);
     memset(buf, 0xFF, EDITOR->line_size);
     struct t_data *print_curr = EDITOR->head_data;
+    print_curr = print_curr->next;
 
+    if(EDITOR->head_data == EDITOR->cursor->point){
+        // if EDITOR->cursor->point is header;
+        curr_row = 0;
+        curr_col = -1;
+        already_located = true;
+    }
 
     for(int i = 0; i < EDITOR->ws->ws_row-4; i++){
         for(col_inline = 0; col_inline < EDITOR->line_size; col_inline++){
-            if(print_curr == EDITOR->cursor->point){ /* For cursor */
+            if((print_curr == EDITOR->cursor->point) && !already_located){ /* For cursor */
                 curr_row = i;
                 curr_col = col_inline;
             }
@@ -175,10 +186,8 @@ void print_screen(EDITOR *EDITOR, char *header, char **footer){
     printf("%s\r\n", footer[1]);
     printf("%s", footer[2]);
 
-    /* cursor */
-    if(curr_col != -1){
-        printf("a\x1B[%d;%dH", curr_row+1+1, (curr_col+1)*2+12+1);
-    }
+    /* display cursor */
+    printf("a\x1B[%d;%dH", curr_row+1+1, (curr_col+1)*2+12+1);
 
     return;
 }

@@ -24,6 +24,15 @@ EDITOR init_editor(void){
     EDITOR.curr_col     = 0;
     EDITOR.msgStatus    = 0b00000000;
 
+    EDITOR.head_data = malloc(sizeof(T_DATA));
+    // EDITOR.head_data->data = 0x3E;
+    EDITOR.head_data->data = 0x00;
+    EDITOR.head_data->next = NULL;
+    EDITOR.head_data->prev = NULL;
+    EDITOR.cursor = malloc(sizeof(T_CURSOR));
+    EDITOR.cursor->editing = false;
+    EDITOR.cursor->point = EDITOR.head_data;
+
     int len = 0;
 
     char buf[32];

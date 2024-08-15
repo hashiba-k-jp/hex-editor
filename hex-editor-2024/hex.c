@@ -8,11 +8,6 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-// #include <stdint.h>
-// #include <string.h>
-// #include <ctype.h>
-// #include <getopt.h>
-
 #include <unistd.h>  // getopt(), write(), read(), STD{IN, OUT}_FILENO, access()
 #include <err.h>    // warn(), err(),
 #include <errno.h>  // errno,
@@ -21,7 +16,6 @@
 #include <stdlib.h> // atexit(),
 #include <string.h> // memcmp(),
 #include <fcntl.h> // open(), O_RDONLY,...
-// #include <ncurses.h>    // ncurses:initscr(),
 
 #include "header.h"
 
@@ -114,10 +108,8 @@ int main(int argc, char *argv[]){
     }
     // printf("[debug] file size is %d\r\n", EDITOR.filesize);
 
-    if(EDITOR.fd != -1){
-        if(read_file(&EDITOR) == -1){
-            err(-1, "Failed to read files or construct the data structres...");
-        }
+    if(read_file(&EDITOR) == -1){
+        err(-1, "Failed to read files or construct the data structres...");
     }
 
     init_screen(&EDITOR);

@@ -39,13 +39,12 @@ int main(int argc, char *argv[]){
     save_cooked_mode();
     switch_raw_mode();
 
-    /* PHASE 1-2 : DISABLE BUFFER OF PRINTF */
+    /* PHASE 1-2 : DISABLE BUFFER OF PRINTF (This makes termial to print anything immediately) */
     /* _IONBF : unbufferd */
     int vbuf_status = setvbuf(stdout, NULL, _IONBF, 0);
     if(vbuf_status != 0){
         err(vbuf_status, "Failed to disable buffer of standard output.");
     }
-
 
     /* PHASE 2 : INITIALIZE THE EDITOR */
     EDITOR EDITOR = init_editor();
@@ -75,7 +74,7 @@ int main(int argc, char *argv[]){
         }
     }
 
-    /* PHASE 4 (optional) : CHECK WHETEHR THE INPUT FILE EXISTS OR NOT */
+    /* PHASE 4 : CHECK WHETEHR THE INPUT FILE EXISTS OR NOT */
     /*
         - If the file exists ->
             - File reading is permitted -> just read the file.
@@ -90,8 +89,9 @@ int main(int argc, char *argv[]){
             case 0: /* file exists */
                 if((file_check = access(EDITOR.filename, R_OK)) == -1){
                     err(file_check, "Cannot read the input file %s", EDITOR.filename);
-                };
-                EDITOR.fd = open(EDITOR.filename, O_RDONLY);
+                }else{
+                    EDITOR.fd = open(EDITOR.filename, O_RDONLY);
+                }
                 break;
             case -1: /* file does NOT exist */
                 /* S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH -> chmod 644 */

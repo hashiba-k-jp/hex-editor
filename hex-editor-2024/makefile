@@ -2,7 +2,7 @@
 CC = clang
 OUTNAME = hex
 
-editor: hex.c config.h terminalMode.h keys.h file.h
+editor: hex.c config.h terminalMode.h keys.h file.h screen.h header.h
 	# https://qiita.com/kaityo256/items/80863d466e0d69808eb9
 	$(CC) -Ofast hex.c -o $(OUTNAME)
 

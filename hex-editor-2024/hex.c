@@ -123,6 +123,7 @@ int main(int argc, char *argv[]){
     int res_process;
 
     while(1){
+        get_winsize(&EDITOR);
         print_screen(&EDITOR, header, footer);
         input_c = keyInput();
         // printf("[debug] input_c = %x\r\n", input_c);
@@ -200,10 +201,10 @@ int keyProcess(int c, char* msg, EDITOR *EDITOR, char **footer){
             break;
 
         case ARR_UP:
-            _move_cursor(EDITOR, EDITOR->line_size, DIR_PREV);
+            _move_cursor(EDITOR, ((EDITOR->ws->ws_col-19) / 24)*8, DIR_PREV);
             break;
         case ARR_DW:
-            _move_cursor(EDITOR, EDITOR->line_size, DIR_NEXT);
+            _move_cursor(EDITOR, ((EDITOR->ws->ws_col-19) / 24)*8, DIR_NEXT);
             break;
         case ARR_RI:
             _move_cursor(EDITOR, 1, DIR_NEXT);

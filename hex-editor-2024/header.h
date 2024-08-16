@@ -7,7 +7,7 @@ typedef struct editor{
     int curr_col;       // CURRent row
     int filesize;
     bool isEdited;
-    int line_size;
+    // int line_size;
 
     // struct datablock *head_block;
     struct t_data *head_data;
@@ -59,3 +59,4 @@ char* header_msg(EDITOR*);
 char** footer_msg(EDITOR*);
 void init_screen(EDITOR*);
 void print_screen(EDITOR*, char*, char**);
+void get_winsize(EDITOR*);

@@ -5,6 +5,14 @@ enum msgStatus{
     quitting    = 0b00000100,
 };
 
+void get_winsize(EDITOR *EDITOR){
+    int succ_get_winsize;
+    if ((succ_get_winsize = ioctl(1, TIOCGWINSZ, EDITOR->ws)) != 0){
+        err(succ_get_winsize, "[ERROR] Failed to get window size.");
+    }
+    return;
+}
+
 char *header_msg(EDITOR *EDITOR){
     char *tmp;
     int len = EDITOR->ws->ws_col;
@@ -103,27 +111,40 @@ void init_screen(EDITOR *EDITOR){
     return;
 }
 
+int _fill_buf(char *dest, char *str, int offset, int n){
+    strncpy(dest+offset, str, n);
+    return offset+n;
+}
+
 void print_screen(EDITOR *EDITOR, char *header, char **footer){
 
-    // [todo] printfの回数を減らす
-    char *line_buf = malloc(sizeof(char)*EDITOR->ws->ws_col);
+    // [todo] ファイルサイズが大きいものは扱えない（アドレス表示が16進数8桁の固定値）
+    // [ERROR] sprintfがおそらくセグフォルトを起こしてそう（sprintfだけコメントアウトして実行すると動きそうな気配）
+        // -> asprintf にするとセグフォルトは起こらなくなるけど最後の表示がバグる ((null)とかになる)
+    // [todo] まだ実行時間が遅い（画面サイズによっては受け入れ難いレベルに遅いのでやっぱりデータ構造を変えるしかない？）
 
-    // [todo] 実行時間がやけに遅い
-    // データ構造を根本的に変える必要がありそう？
-    // 例えばある程度の大きさの配列にしてmemcpyすりゃforなり->nextなりの必要はなくなる。
-    // しかしそうするとinsert/deleteの時にmemmovとか必要になりそう?
-    // printf("\x1B[0;0H");
-    // printf("%s\r\n", header);
     printf("\x1B[0;0H%s\r\n", header);
 
-    EDITOR->line_size = ((EDITOR->ws->ws_col-19) / 24)*8;
+    int line_size = ((EDITOR->ws->ws_col-19) / 24)*8;
     int line_i = 0;
     int col_inline = 0;
     int curr_row, curr_col;
     bool already_located = false;
 
-    unsigned char *buf = malloc(sizeof(char)*EDITOR->line_size);
-    memset(buf, 0xFF, EDITOR->line_size);
+    /* 理論値は 11+1+line_size*(2+5+1+5+8)+4+3+2+4 = line_size*21+25
+        [アドレス番号+:] 11
+        [空白] 1
+        [hex]  line_size*(2+5)    (5 = \x1b[47m)
+        [空白] 4+3 (4 = \x1b[0m)
+        [char] line_size*(1+5+8)  (\x1B[1m \x1B[0m 色を変えた文字)
+        [end] 2+4 \r\n\x1b[0m
+    */
+    char *display_buf = malloc(sizeof(char)*(line_size*21+25));
+    char *display_char_buf = malloc(sizeof(char)*(line_size*14));
+    char *addr_buf = malloc(sizeof(char)*12);
+    char *hex_buf  = malloc(sizeof(char)*3);
+    char *char_buf = malloc(sizeof(char)*2);
+
     struct t_data *print_curr = EDITOR->head_data;
     print_curr = print_curr->next;
 
@@ -135,52 +156,61 @@ void print_screen(EDITOR *EDITOR, char *header, char **footer){
     }
 
     for(int i = 0; i < EDITOR->ws->ws_row-4; i++){
-        for(col_inline = 0; col_inline < EDITOR->line_size; col_inline++){
+        memset(display_buf,      '\0', line_size*21+25);
+        memset(display_char_buf, '\0', line_size*14);
+        memset(addr_buf, '\0', 12);
+        memset(hex_buf,  '\0', 3);
+        memset(char_buf, '\0', 2);
+        int filled_disp_buf = 0;
+        int filled_disp_char_buf = 0;
+
+        asprintf(&addr_buf, "0x%08x:", i*line_size);
+        filled_disp_buf = _fill_buf(display_buf, addr_buf, filled_disp_buf, strlen(addr_buf));
+        filled_disp_buf = _fill_buf(display_buf, " ", filled_disp_buf, 1);
+
+        for(col_inline = 0; col_inline < line_size; col_inline++){
             if((print_curr == EDITOR->cursor->point) && !already_located){ /* For cursor */
                 curr_row = i;
                 curr_col = col_inline;
             }
-            if(print_curr == NULL){
-                break;
+            if(col_inline % 2 == 0){
+                filled_disp_buf      = _fill_buf(display_buf,      "\x1b[47m", filled_disp_buf,      strlen("\x1b[47m"));
+                filled_disp_char_buf = _fill_buf(display_char_buf, "\x1b[47m", filled_disp_char_buf, strlen("\x1b[47m"));
             }else{
-                *(buf+col_inline) = print_curr->data;
+                filled_disp_buf      = _fill_buf(display_buf,      "\x1b[0m",  filled_disp_buf,      strlen("\x1b[0m"));
+                filled_disp_char_buf = _fill_buf(display_char_buf, "\x1b[0m",  filled_disp_char_buf, strlen("\x1b[0m"));
+            }
+
+            if(print_curr == NULL){
+                filled_disp_buf      = _fill_buf(display_buf,      "  ", filled_disp_buf,      strlen("  "));
+                filled_disp_char_buf = _fill_buf(display_char_buf, " ",  filled_disp_char_buf, strlen(" "));
+            }else{
+                asprintf(&hex_buf, "%02X", print_curr->data);
+                filled_disp_buf = _fill_buf(display_buf, hex_buf, filled_disp_buf, strlen(hex_buf));
+
+                if(0x20 <= print_curr->data && print_curr->data <= 0x7E){
+                    asprintf(&char_buf, "%c", print_curr->data);
+                    filled_disp_char_buf = _fill_buf(display_char_buf, char_buf,           filled_disp_char_buf, 1); // strlen(char_buf)
+                }else{
+                    filled_disp_char_buf = _fill_buf(display_char_buf, "\x1B[1m･\x1B[0m",  filled_disp_char_buf, strlen("\x1B[1m･\x1B[0m")); // strlen(char_buf)
+                }
                 print_curr = print_curr->next;
             }
         }
 
-        // [todo] too big file cannot be handeled with this code.
-        // if(0xFFFFFFFF <= EDITOR->filesize){
-        //     printf("0x%012x: ", i*EDITOR->line_size);
-        // }else{
-            printf("0x%08x: ", i*EDITOR->line_size);
-        // }
+        filled_disp_buf = _fill_buf(display_buf, "   ", filled_disp_buf, strlen("   "));
 
-        for(int j = 0; j < EDITOR->line_size; j++){
-            if(j % 2 == 0){ printf("\x1b[47m"); }
-            if(j < col_inline){
-                printf("%02X", buf[j]);
-            }else{
-                printf("  ");
-            }
-            printf("\x1b[0m");
-        }
+        filled_disp_buf = _fill_buf(display_buf, display_char_buf, filled_disp_buf, filled_disp_char_buf);
+        filled_disp_buf = _fill_buf(display_buf, "\r\n", filled_disp_buf, 2); // strlen("\r\n") = 2
 
-        printf("   ");
-        for(int j = 0; j < EDITOR->line_size; j++){
-            if(j % 2 == 0){ printf("\x1b[47m"); }
-            if(j < col_inline){
-                if(0x20 <= buf[j] && buf[j] <= 0x7E){
-                    printf("%c", buf[j]);
-                }else{
-                    printf("\x1B[1m･\x1B[0m");
-                }
-            }else{
-                printf(" ");
-            }
-            printf("\x1b[0m");
-        }
-        printf("\r\n");
+        printf("%s", display_buf);
     }
+
+    free(display_buf);
+    free(display_char_buf);
+    free(addr_buf);
+    free(hex_buf);
+    free(char_buf);
 
     printf("%s\r\n", footer[0]);
     printf("%s\r\n", footer[1]);

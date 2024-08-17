@@ -18,13 +18,17 @@ EDITOR init_editor(void){
     EDITOR.fd           = -1;
     EDITOR.ws           = malloc(sizeof(struct winsize));
     EDITOR.isColored    = NULL;
+    EDITOR.footer       = (char **)malloc(sizeof(char *)*3);
+    EDITOR.header       = (char **)malloc(sizeof(char *));
     EDITOR.filesize     = -1;
     EDITOR.isEdited     = false;
     EDITOR.curr_row     = 0;
     EDITOR.curr_col     = 0;
     EDITOR.msgStatus    = 0b00000000;
+    /* footer と header はポインタのポインタ */
 
     EDITOR.head_data = malloc(sizeof(T_DATA));
+    EDITOR.tail_data = malloc(sizeof(T_DATA));
     // EDITOR.head_data->data = 0x3E;
     EDITOR.head_data->data = 0x00;
     EDITOR.head_data->next = NULL;

@@ -7,10 +7,13 @@ typedef struct editor{
     int curr_col;       // CURRent row
     int filesize;
     bool isEdited;
+    char **footer;
+    char **header;
     // int line_size;
 
     // struct datablock *head_block;
     struct t_data *head_data;
+    struct t_data *tail_data;
     struct t_cursor *cursor;
 
     int curr_footer_status;
@@ -37,7 +40,7 @@ typedef struct t_cursor{
 }T_CURSOR;
 
 // hex.c
-int keyProcess(int, char*, EDITOR*, char**);
+int keyProcess(int, char*, EDITOR*);
 int keyInput();
 void _move_cursor(EDITOR*, int, int);
 
@@ -55,8 +58,8 @@ int read_file(EDITOR*);
 int save_file(EDITOR*);
 
 // screen.h
-char* header_msg(EDITOR*);
-char** footer_msg(EDITOR*);
+void header_msg(EDITOR*);
+void footer_msg(EDITOR*);
 void init_screen(EDITOR*);
-void print_screen(EDITOR*, char*, char**);
+void print_screen(EDITOR*);
 void get_winsize(EDITOR*);

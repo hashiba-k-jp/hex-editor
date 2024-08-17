@@ -114,9 +114,8 @@ int main(int argc, char *argv[]){
 
     init_screen(&EDITOR);
 
-    char *header = header_msg(&EDITOR);
-    char **footer = footer_msg(&EDITOR);
-    // char **footer;
+    header_msg(&EDITOR);
+    footer_msg(&EDITOR);
 
     char *msg;
     int input_c;
@@ -124,10 +123,12 @@ int main(int argc, char *argv[]){
 
     while(1){
         get_winsize(&EDITOR);
-        print_screen(&EDITOR, header, footer);
+        header_msg(&EDITOR);
+        footer_msg(&EDITOR);
+        print_screen(&EDITOR);
         input_c = keyInput();
         // printf("[debug] input_c = %x\r\n", input_c);
-        res_process = keyProcess(input_c, msg, &EDITOR, footer);
+        res_process = keyProcess(input_c, msg, &EDITOR);
     }
 
     return 0;
@@ -136,10 +137,11 @@ int main(int argc, char *argv[]){
 
 enum move_dir{ DIR_NEXT, DIR_PREV };
 void _move_cursor(EDITOR *EDITOR, int diff, int move_dir){
+    /* カーソルは EDITOR->head_data を指すことはあるが tail_data を指すことはないことに留意 */
     T_DATA *tmp;
     if(move_dir == DIR_NEXT){
         for(int i = 0; i < diff; i++){
-            if((tmp = EDITOR->cursor->point->next) == NULL){
+            if((tmp = EDITOR->cursor->point->next) == EDITOR->tail_data){
                 break;
             }else{
                 EDITOR->cursor->point = tmp;
@@ -156,7 +158,7 @@ void _move_cursor(EDITOR *EDITOR, int diff, int move_dir){
     }
 };
 
-int keyProcess(int c, char* msg, EDITOR *EDITOR, char **footer){
+int keyProcess(int c, char* msg, EDITOR *EDITOR){
     int res = -99;
     if(EDITOR->cursor->editing){
         if(KEY0 <= c && c <= KEYF){ /* [0-9a-fA-F] */
@@ -167,6 +169,7 @@ int keyProcess(int c, char* msg, EDITOR *EDITOR, char **footer){
         }
     }else{
         if(KEY0 <= c && c <= KEYF){
+            // [todo] ファイルの最後に挿入するとsegfault
 
             T_DATA *insert = malloc(sizeof(T_DATA));
             // insert->data = (c&0x000F)<<4;
@@ -175,7 +178,7 @@ int keyProcess(int c, char* msg, EDITOR *EDITOR, char **footer){
             EDITOR->cursor->point->next->prev = insert;
             insert->next = EDITOR->cursor->point->next;
             EDITOR->cursor->point->next = insert;
-            insert->prev = EDITOR->cursor->point->next;
+            insert->prev = EDITOR->cursor->point;
             EDITOR->cursor->point = insert;
             EDITOR->cursor->editing = true;
         }else{
@@ -193,8 +196,9 @@ int keyProcess(int c, char* msg, EDITOR *EDITOR, char **footer){
     switch (c) {
         case CTRL_Q:
             // [Todo] Save or not.
-            if(EDITOR->isEdited){
-
+            if(EDITOR->cursor->editing){
+                printf("\a");
+                exit(EXIT_SUCCESS);
             }else{
                 exit(EXIT_SUCCESS);
             }

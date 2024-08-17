@@ -13,38 +13,30 @@ void get_winsize(EDITOR *EDITOR){
     return;
 }
 
-char *header_msg(EDITOR *EDITOR){
-    char *tmp;
-    int len = EDITOR->ws->ws_col;
-    char *header = malloc(sizeof(char)*(len+4+4));
-    int i;
+int _ncpy_buf(char *dest, char *str, int offset){
+    strncpy(dest+offset, str, strlen(str));
+    return offset+strlen(str);
+}
 
-    memcpy(header, "\x1B[7m", 4);
+int _fill_buf(char *dest, char c, int offset, int n){
+    memset(dest+offset, c, n);
+    return offset+n;
+}
 
-    // header = realloc(header, sizeof(header) + len);
-    tmp = "hex editor";
-    memcpy(header+4, tmp, strlen(tmp));
+void header_msg(EDITOR *EDITOR){
+    int offset = 0;
+    *(EDITOR->header) = realloc(*(EDITOR->header), sizeof(char)*(EDITOR->ws->ws_col+4+4));
 
-    for(i = 4+strlen(tmp); i < len/2; i++){
-        memcpy(header+i, " ", 1);
-    }
-
+    offset      = _ncpy_buf(*(EDITOR->header), "\x1B[7m",           offset);
+    offset      = _ncpy_buf(*(EDITOR->header), "HEX EDITOR",        offset);
+    offset      = _fill_buf(*(EDITOR->header), '\x20',              offset, (EDITOR->ws->ws_col/2 - offset));
     if(EDITOR->filename != NULL){
-        memcpy(header+i, EDITOR->filename, strlen(EDITOR->filename));
-        for(i+=strlen(EDITOR->filename); i < len+4; i++){
-            memcpy(header+i, " ", 1);
-        }
-    }else{
-        for(; i < len+4; i++){
-            memcpy(header+i, " ", 1);
-        }
+        offset  = _ncpy_buf(*(EDITOR->header), EDITOR->filename,    offset);
     }
-
-    memcpy(header+i, "\x1B[0m", 4);
-
-
+    offset      = _fill_buf(*(EDITOR->header), '\x20',              offset, ((EDITOR->ws->ws_col+4) - offset));
+    offset      = _ncpy_buf(*(EDITOR->header), "\x1B[0m",           offset);
     // printf("\x1B[7m[debug] {%d} This is a test header\x1B[%dG\x1B[0m\r\n", EDITOR->ws->ws_col, EDITOR->ws->ws_col);
-    return header;
+    return;
 }
 
 
@@ -60,49 +52,72 @@ char *header_msg(EDITOR *EDITOR){
             -> Cancel       : "[Canceled]",     default commands
 
 */
-char **footer_msg(EDITOR *EDITOR){
-    char **footer;
-    footer = malloc(3); /* addr is 1 byte */
+void footer_msg(EDITOR *EDITOR){
+    // [todo] footer msg の作成
 
-    char *footer_1 = malloc(sizeof(char)*(EDITOR->ws->ws_col+4+4));
-    for(int i = 0; i < EDITOR->ws->ws_col+4+4; i++){ /* init footer_1 */
-        footer_1[i] = ' ';
-    }
+    int offset0 = 0;
+    *((EDITOR->footer)+0) = realloc(*((EDITOR->footer)+0), sizeof(char)*(EDITOR->ws->ws_col+4+4));
+    offset0 = _ncpy_buf(*((EDITOR->footer)+0), "\x1B[7m", offset0);
+    offset0 = _fill_buf(*((EDITOR->footer)+0), '\x20',    offset0, (EDITOR->ws->ws_col+4 - offset0));
+    offset0 = _ncpy_buf(*((EDITOR->footer)+0), "\x1B[0m", offset0);
 
-    if(EDITOR->msgStatus == quitting){
-        memcpy(footer_1,        "\x1B[7m", 4);
-        memcpy(footer_1+4,      "File Name to write : ", 21);
-        memcpy(footer_1+4+21,   EDITOR->filename, strlen(EDITOR->filename));
-        memcpy(footer_1+EDITOR->ws->ws_col+4, "\x1B[0m", 4);
-    }else{
-        char *tmp;
-        switch (EDITOR->msgStatus){
-            case s_dafault:
-                tmp = malloc(0);
-                tmp = "";
-                break;
-            case saved:
-                tmp = malloc(7);
-                tmp = "[SAVED]";
-                break;
-            case canceled:
-                tmp = malloc(10);
-                tmp = "[CANCELED]";
-                break;
-            default:
-                err(-1, "unexpected footer msg status.");
-        }
-        int tmp_pos = ((EDITOR->ws->ws_col+4+4) + strlen(tmp))/2;
-        memcpy(footer_1+tmp_pos-4, "\x1B[7m", 4);
-        memcpy(footer_1+tmp_pos, tmp, strlen(tmp));
-        memcpy(footer_1+tmp_pos+strlen(tmp), "\x1B[0m", 4);
-    }
 
-    footer[0] = footer_1;
-    footer[1] = "tmp2";
-    footer[2] = "tmp3";
 
-    return footer;
+
+
+    /* SPILED は適当な値であることに留意（特にoverflow!）*/
+    int SPILED = 0;
+    int offset1 = 0;
+    *(EDITOR->footer+1) = realloc(*(EDITOR->footer+1), sizeof(char)*(EDITOR->ws->ws_col+SPILED));
+    offset1 = _fill_buf(*(EDITOR->footer+1), '1', offset1, (EDITOR->ws->ws_col+SPILED - offset1));
+
+    int offset2 = 0;
+    *(EDITOR->footer+2) = realloc(*(EDITOR->footer+2), sizeof(char)*(EDITOR->ws->ws_col+SPILED));
+    offset2 = _fill_buf(*(EDITOR->footer+2), '2', offset2, (EDITOR->ws->ws_col+SPILED - offset2));
+
+
+
+    // char *footer_1 = malloc(sizeof(char)*(EDITOR->ws->ws_col+4+4));
+    // for(int i = 0; i < EDITOR->ws->ws_col+4+4; i++){ /* init footer_1 */
+    //     footer_1[i] = ' ';
+    // }
+    //
+    // if(EDITOR->msgStatus == quitting){
+    //     memcpy(footer_1,        "\x1B[7m", 4);
+    //     memcpy(footer_1+4,      "File Name to write : ", 21);
+    //     memcpy(footer_1+4+21,   EDITOR->filename, strlen(EDITOR->filename));
+    //     memcpy(footer_1+EDITOR->ws->ws_col+4, "\x1B[0m", 4);
+    // }else{
+    //     char *tmp;
+    //     switch (EDITOR->msgStatus){
+    //         case s_dafault:
+    //             tmp = malloc(0);
+    //             tmp = "";
+    //             break;
+    //         case saved:
+    //             tmp = malloc(7);
+    //             tmp = "[SAVED]";
+    //             break;
+    //         case canceled:
+    //             tmp = malloc(10);
+    //             tmp = "[CANCELED]";
+    //             break;
+    //         default:
+    //             err(-1, "unexpected footer msg status.");
+    //     }
+    //     int tmp_pos = ((EDITOR->ws->ws_col+4+4) + strlen(tmp))/2;
+    //     memcpy(footer_1+tmp_pos-4, "\x1B[7m", 4);
+    //     memcpy(footer_1+tmp_pos, tmp, strlen(tmp));
+    //     memcpy(footer_1+tmp_pos+strlen(tmp), "\x1B[0m", 4);
+    // }
+
+    // EDITOR->footer[0] = footer_1;
+    // EDITOR->footer[1] = "footer_1";
+    // EDITOR->footer[2] = "footer_2";
+    // footer[1] = "footer[1]";
+    // footer[2] = "footer[2]";
+
+    return;
 }
 
 void init_screen(EDITOR *EDITOR){
@@ -111,19 +126,12 @@ void init_screen(EDITOR *EDITOR){
     return;
 }
 
-int _fill_buf(char *dest, char *str, int offset, int n){
-    strncpy(dest+offset, str, n);
-    return offset+n;
-}
-
-void print_screen(EDITOR *EDITOR, char *header, char **footer){
+void print_screen(EDITOR *EDITOR){
 
     // [todo] ファイルサイズが大きいものは扱えない（アドレス表示が16進数8桁の固定値）
-    // [ERROR] sprintfがおそらくセグフォルトを起こしてそう（sprintfだけコメントアウトして実行すると動きそうな気配）
-        // -> asprintf にするとセグフォルトは起こらなくなるけど最後の表示がバグる ((null)とかになる)
-    // [todo] まだ実行時間が遅い（画面サイズによっては受け入れ難いレベルに遅いのでやっぱりデータ構造を変えるしかない？）
-
-    printf("\x1B[0;0H%s\r\n", header);
+    // [DONE][todo] まだ実行時間が遅い（画面サイズによっては受け入れ難いレベルに遅いのでやっぱりデータ構造を変えるしかない？）
+    // [todo] カーソルの表示が若干不安定
+    // [todo] bufを減らせる気がする（実行時間の削減に繋がるかは不明）
 
     int line_size = ((EDITOR->ws->ws_col-19) / 24)*8;
     int line_i = 0;
@@ -131,19 +139,37 @@ void print_screen(EDITOR *EDITOR, char *header, char **footer){
     int curr_row, curr_col;
     bool already_located = false;
 
-    /* 理論値は 11+1+line_size*(2+5+1+5+8)+4+3+2+4 = line_size*21+25
-        [アドレス番号+:] 11
-        [空白] 1
-        [hex]  line_size*(2+5)    (5 = \x1b[47m)
-        [空白] 4+3 (4 = \x1b[0m)
-        [char] line_size*(1+5+8)  (\x1B[1m \x1B[0m 色を変えた文字)
-        [end] 2+4 \r\n\x1b[0m
+    /* 理論値は
+        <header> 8 + strlen(*(EDITOR->header))
+            [カーソル修正] {6} \x1B[0;0H
+            [本文] {strlen(*(EDITOR->header))}
+            [改行] {2} \r\n
+        <本体部分> 11+1+line_size*(2+5+1+5+8)+4+3+2+4 = line_size*21+25
+            [アドレス番号+:] 11
+            [空白] 1
+            [hex]  line_size*(2+5)    (5 = \x1b[47m)
+            [空白] 4+3 (4 = \x1b[0m)
+            [char] line_size*(1+5+8)  (\x1B[1m \x1B[0m 色を変えた文字)
+            [end] 2+4 \r\n\x1b[0m
+        <footer> strlen(*(EDITOR->footer+0)) + strlen(*(EDITOR->footer+1)) + strlen(*(EDITOR->footer+2)) + 4
     */
-    char *display_buf = malloc(sizeof(char)*(line_size*21+25));
-    char *display_char_buf = malloc(sizeof(char)*(line_size*14));
-    char *addr_buf = malloc(sizeof(char)*12);
-    char *hex_buf  = malloc(sizeof(char)*3);
-    char *char_buf = malloc(sizeof(char)*2);
+
+    int all_length = (8+strlen(*EDITOR->header)) + (line_size*21+25)*(EDITOR->ws->ws_row-4) + (strlen(*(EDITOR->footer+0))+strlen(*(EDITOR->footer+1))+strlen(*(EDITOR->footer+2))+4);
+    // char *display_buf_all   = (char *)malloc(sizeof(char)*all_length);
+    char *display_buf_all   = (char *)malloc(sizeof(char)*(line_size*21+25)*(EDITOR->ws->ws_row-4));
+    int offset_all = 0;
+
+    offset_all = _ncpy_buf(display_buf_all, "\x1B[0;0H", offset_all);
+    offset_all = _ncpy_buf(display_buf_all, *(EDITOR->header), offset_all);
+    offset_all = _ncpy_buf(display_buf_all, "\r\n", offset_all);
+
+    // printf("\x1B[0;0H%s\r\n", *(EDITOR->header));
+
+    char *display_buf       = (char *)malloc(sizeof(char)*(line_size*21+25));
+    char *display_char_buf  = (char *)malloc(sizeof(char)*(line_size*14));
+    char *addr_buf = (char *)malloc(sizeof(char)*12);
+    char *hex_buf  = (char *)malloc(sizeof(char)*3);
+    char *char_buf = (char *)malloc(sizeof(char)*2);
 
     struct t_data *print_curr = EDITOR->head_data;
     print_curr = print_curr->next;
@@ -165,8 +191,8 @@ void print_screen(EDITOR *EDITOR, char *header, char **footer){
         int filled_disp_char_buf = 0;
 
         asprintf(&addr_buf, "0x%08x:", i*line_size);
-        filled_disp_buf = _fill_buf(display_buf, addr_buf, filled_disp_buf, strlen(addr_buf));
-        filled_disp_buf = _fill_buf(display_buf, " ", filled_disp_buf, 1);
+        filled_disp_buf = _ncpy_buf(display_buf, addr_buf, filled_disp_buf);
+        filled_disp_buf = _ncpy_buf(display_buf, " ", filled_disp_buf);
 
         for(col_inline = 0; col_inline < line_size; col_inline++){
             if((print_curr == EDITOR->cursor->point) && !already_located){ /* For cursor */
@@ -174,36 +200,36 @@ void print_screen(EDITOR *EDITOR, char *header, char **footer){
                 curr_col = col_inline;
             }
             if(col_inline % 2 == 0){
-                filled_disp_buf      = _fill_buf(display_buf,      "\x1b[47m", filled_disp_buf,      strlen("\x1b[47m"));
-                filled_disp_char_buf = _fill_buf(display_char_buf, "\x1b[47m", filled_disp_char_buf, strlen("\x1b[47m"));
+                filled_disp_buf      = _ncpy_buf(display_buf,      "\x1b[47m", filled_disp_buf     );
+                filled_disp_char_buf = _ncpy_buf(display_char_buf, "\x1b[47m", filled_disp_char_buf);
             }else{
-                filled_disp_buf      = _fill_buf(display_buf,      "\x1b[0m",  filled_disp_buf,      strlen("\x1b[0m"));
-                filled_disp_char_buf = _fill_buf(display_char_buf, "\x1b[0m",  filled_disp_char_buf, strlen("\x1b[0m"));
+                filled_disp_buf      = _ncpy_buf(display_buf,      "\x1b[0m",  filled_disp_buf     );
+                filled_disp_char_buf = _ncpy_buf(display_char_buf, "\x1b[0m",  filled_disp_char_buf);
             }
 
             if(print_curr == NULL){
-                filled_disp_buf      = _fill_buf(display_buf,      "  ", filled_disp_buf,      strlen("  "));
-                filled_disp_char_buf = _fill_buf(display_char_buf, " ",  filled_disp_char_buf, strlen(" "));
+                filled_disp_buf      = _ncpy_buf(display_buf,      "  ", filled_disp_buf     );
+                filled_disp_char_buf = _ncpy_buf(display_char_buf, " ",  filled_disp_char_buf);
             }else{
                 asprintf(&hex_buf, "%02X", print_curr->data);
-                filled_disp_buf = _fill_buf(display_buf, hex_buf, filled_disp_buf, strlen(hex_buf));
+                filled_disp_buf = _ncpy_buf(display_buf, hex_buf, filled_disp_buf);
 
                 if(0x20 <= print_curr->data && print_curr->data <= 0x7E){
                     asprintf(&char_buf, "%c", print_curr->data);
-                    filled_disp_char_buf = _fill_buf(display_char_buf, char_buf,           filled_disp_char_buf, 1); // strlen(char_buf)
+                    filled_disp_char_buf = _ncpy_buf(display_char_buf, char_buf,           filled_disp_char_buf); // strlen(char_buf)
                 }else{
-                    filled_disp_char_buf = _fill_buf(display_char_buf, "\x1B[1m･\x1B[0m",  filled_disp_char_buf, strlen("\x1B[1m･\x1B[0m")); // strlen(char_buf)
+                    filled_disp_char_buf = _ncpy_buf(display_char_buf, "\x1B[1m･\x1B[0m",  filled_disp_char_buf); // strlen(char_buf)
                 }
                 print_curr = print_curr->next;
             }
         }
 
-        filled_disp_buf = _fill_buf(display_buf, "   ", filled_disp_buf, strlen("   "));
+        filled_disp_buf = _ncpy_buf(display_buf, "   ", filled_disp_buf);
 
-        filled_disp_buf = _fill_buf(display_buf, display_char_buf, filled_disp_buf, filled_disp_char_buf);
-        filled_disp_buf = _fill_buf(display_buf, "\r\n", filled_disp_buf, 2); // strlen("\r\n") = 2
+        filled_disp_buf = _ncpy_buf(display_buf, display_char_buf, filled_disp_buf);
+        filled_disp_buf = _ncpy_buf(display_buf, "\r\n", filled_disp_buf);
 
-        printf("%s", display_buf);
+        offset_all = _ncpy_buf(display_buf_all, display_buf, offset_all);
     }
 
     free(display_buf);
@@ -212,12 +238,21 @@ void print_screen(EDITOR *EDITOR, char *header, char **footer){
     free(hex_buf);
     free(char_buf);
 
-    printf("%s\r\n", footer[0]);
-    printf("%s\r\n", footer[1]);
-    printf("%s", footer[2]);
+    offset_all = _ncpy_buf(display_buf_all, *(EDITOR->footer+0), offset_all);
+    offset_all = _ncpy_buf(display_buf_all, "\r\n", offset_all);
+    offset_all = _ncpy_buf(display_buf_all, *(EDITOR->footer+1), offset_all);
+    offset_all = _ncpy_buf(display_buf_all, "\r\n", offset_all);
+    offset_all = _ncpy_buf(display_buf_all, *(EDITOR->footer+2), offset_all);
+
+
+    // printf("%s\r\n", *(EDITOR->footer+0));
+    // printf("%s\r\n", *(EDITOR->footer+1));
+    // printf("%s",     *(EDITOR->footer+2));
+
+    printf("%s", display_buf_all);
 
     /* display cursor */
-    printf("a\x1B[%d;%dH", curr_row+1+1, (curr_col+1)*2+12+1);
+    printf("\x1B[%d;%dH", curr_row+1+1, (curr_col+1)*2+12+1);
 
     return;
 }

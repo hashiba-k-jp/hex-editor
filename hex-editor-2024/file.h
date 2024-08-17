@@ -1,6 +1,5 @@
 /* This function may be called only once. */
 int read_file(EDITOR *EDITOR){
-    // このプログラムでは EDITOR->cursor の値は一切変化しない
 
     if(EDITOR->fd == -1){
         // [todo] ファイルが開かれていない場合の処理をここで
@@ -29,6 +28,8 @@ int read_file(EDITOR *EDITOR){
             // printf("[debug] %6d / %6d [%02X]\r\n", i, EDITOR->filesize, tmp->data);
             i++;
         }
+        reader->point->next = EDITOR->tail_data;
+        EDITOR->tail_data->prev = reader->point;
     }
     return 0;
 }

@@ -42,5 +42,22 @@ int save_file(EDITOR *EDITOR){
     // 3. 元のファイルを削除してファイル名の変更
     // こんな感じ？
     // ここでファイルのアクセス権限に注意!
+
+    if(access(EDITOR->filename, W_OK) != 0){
+        err(errno, "Cannot overwrite to the file %s", EDITOR->filename);
+    }else{
+        EDITOR->fd = open(EDITOR->filename, O_WRONLY);
+    }
+
+    T_DATA *buffer = EDITOR->head_data;
+    int len = 0;
+    // printf("%d", EDITOR->fd);
+    // exit(0);
+    while((buffer = buffer->next) != EDITOR->tail_data){
+        if((len = write(EDITOR->fd, buffer, 1)) != 1){
+            err(errno, "Failed to write to the file.");
+        }
+    }
+
     return -2;
 }

@@ -76,13 +76,11 @@ int main(int argc, char *argv[]){
         - does NOT exist                -> create new file.
     */
     if(EDITOR.filename != NULL){
-        int file_check;
         /* Return 0 if the file exists, even if some permissions are denied. */
-        file_check = access(EDITOR.filename, F_OK);
-        switch (file_check) {
+        switch (access(EDITOR.filename, F_OK)) {
             case 0: /* file exists */
-                if((file_check = access(EDITOR.filename, R_OK)) == -1){
-                    err(file_check, "Cannot read the input file %s", EDITOR.filename);
+                if(access(EDITOR.filename, R_OK) == -1){
+                    err(errno, "Cannot read the input file %s", EDITOR.filename);
                 }else{
                     EDITOR.fd = open(EDITOR.filename, O_RDONLY);
                 }
@@ -182,6 +180,7 @@ int keyProcess(int c, char* msg, EDITOR *EDITOR){
                     break;
                 case CTRL_S:
                     res = save_file(EDITOR);
+                    printf("\a");
                     break;
                 case ARR_UP:
                     _move_cursor(EDITOR, ((EDITOR->ws->ws_col-19) / 24)*8, DIR_PREV);

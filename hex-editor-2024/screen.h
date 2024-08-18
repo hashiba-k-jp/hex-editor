@@ -129,9 +129,12 @@ void init_screen(EDITOR *EDITOR){
 void print_screen(EDITOR *EDITOR){
 
     // [todo] ファイルサイズが大きいものは扱えない（アドレス表示が16進数8桁の固定値）
-    // [DONE][todo] まだ実行時間が遅い（画面サイズによっては受け入れ難いレベルに遅いのでやっぱりデータ構造を変えるしかない？）
-    // [todo] カーソルの表示が若干不安定
     // [todo] bufを減らせる気がする（実行時間の削減に繋がるかは不明）
+    // [todo] まだ実行時間が遅い（画面サイズによっては受け入れ難いレベルに遅いのでやっぱりデータ構造を変えるしかない？）
+    //  -> _ncpy_buf とかの関数呼び出しを消せば若干早くなる？（ミスりそうなので最後にまとめて）
+    // [DONE][todo] カーソルの表示が若干不安定
+    //       -> 画面表示の最中はカーソルを消去（実行時間は遅いままなので微妙）
+
 
     int line_size = ((EDITOR->ws->ws_col-19) / 24)*8;
     int line_i = 0;
@@ -140,7 +143,8 @@ void print_screen(EDITOR *EDITOR){
     bool already_located = false;
 
     /* 理論値は
-        <header> 8 + strlen(*(EDITOR->header))
+        <header> 14 + strlen(*(EDITOR->header))
+            [カーソル非表示] {6} \x1B[?25l
             [カーソル修正] {6} \x1B[0;0H
             [本文] {strlen(*(EDITOR->header))}
             [改行] {2} \r\n
@@ -154,11 +158,12 @@ void print_screen(EDITOR *EDITOR){
         <footer> strlen(*(EDITOR->footer+0)) + strlen(*(EDITOR->footer+1)) + strlen(*(EDITOR->footer+2)) + 4
     */
 
-    int all_length = (8+strlen(*EDITOR->header)) + (line_size*21+25)*(EDITOR->ws->ws_row-4) + (strlen(*(EDITOR->footer+0))+strlen(*(EDITOR->footer+1))+strlen(*(EDITOR->footer+2))+4);
+    int all_length = (14+strlen(*EDITOR->header)) + (line_size*21+25)*(EDITOR->ws->ws_row-4) + (strlen(*(EDITOR->footer+0))+strlen(*(EDITOR->footer+1))+strlen(*(EDITOR->footer+2))+4);
     // char *display_buf_all   = (char *)malloc(sizeof(char)*all_length);
     char *display_buf_all   = (char *)malloc(sizeof(char)*(line_size*21+25)*(EDITOR->ws->ws_row-4));
     int offset_all = 0;
 
+    offset_all = _ncpy_buf(display_buf_all, "\x1B[?25l", offset_all);
     offset_all = _ncpy_buf(display_buf_all, "\x1B[0;0H", offset_all);
     offset_all = _ncpy_buf(display_buf_all, *(EDITOR->header), offset_all);
     offset_all = _ncpy_buf(display_buf_all, "\r\n", offset_all);
@@ -207,7 +212,7 @@ void print_screen(EDITOR *EDITOR){
                 filled_disp_char_buf = _ncpy_buf(display_char_buf, "\x1b[0m",  filled_disp_char_buf);
             }
 
-            if(print_curr == NULL){
+            if(print_curr == EDITOR->tail_data){
                 filled_disp_buf      = _ncpy_buf(display_buf,      "  ", filled_disp_buf     );
                 filled_disp_char_buf = _ncpy_buf(display_char_buf, " ",  filled_disp_char_buf);
             }else{
@@ -252,7 +257,7 @@ void print_screen(EDITOR *EDITOR){
     printf("%s", display_buf_all);
 
     /* display cursor */
-    printf("\x1B[%d;%dH", curr_row+1+1, (curr_col+1)*2+12+1);
+    printf("\x1B[%d;%dH\x1B[?25h", curr_row+1+1, (curr_col+1)*2+12+1);
 
     return;
 }

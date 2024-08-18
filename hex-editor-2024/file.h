@@ -6,7 +6,7 @@ int read_file(EDITOR *EDITOR){
 
     }else{
         int i = 0;
-        char buf[1];
+        char *buf = (char *)malloc(sizeof(char));
         int len;
         T_CURSOR *reader = malloc(sizeof(T_CURSOR));
         reader->point = EDITOR->head_data;
@@ -20,7 +20,7 @@ int read_file(EDITOR *EDITOR){
             if((len = read(EDITOR->fd, buf, 1)) != 1){
                 err(len, "Failed to read char.");
             }else{
-                tmp->data = buf[0];
+                tmp->data = *buf;
             }
             reader->point->next = tmp;
             tmp->prev = reader->point;

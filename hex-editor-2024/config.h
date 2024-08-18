@@ -1,16 +1,3 @@
-// typedef struct datablock{
-//     struct datablock *next_block;
-//     struct datablock *prev_block;
-//     struct t_data *head;
-//     struct t_data *tail;
-//     int block_size;
-// }DATABLOCK;
-
-// enum EDITOR_STATUS{
-//     EDITING,
-//     SAVING,
-// };
-
 EDITOR init_editor(void){
     EDITOR EDITOR;
 
@@ -25,14 +12,15 @@ EDITOR init_editor(void){
     EDITOR.curr_row     = 0;
     EDITOR.curr_col     = 0;
     EDITOR.msgStatus    = 0b00000000;
-    /* footer と header はポインタのポインタ */
 
     EDITOR.head_data = malloc(sizeof(T_DATA));
     EDITOR.tail_data = malloc(sizeof(T_DATA));
-    // EDITOR.head_data->data = 0x3E;
-    EDITOR.head_data->data = 0x00;
+    EDITOR.head_data->data = 0xEE; // do NOT use this value in "if" and other statements
     EDITOR.head_data->next = NULL;
     EDITOR.head_data->prev = NULL;
+    EDITOR.tail_data->data = 0xEE; // do NOT use this value in "if" and other statements
+    EDITOR.tail_data->next = NULL;
+    EDITOR.tail_data->prev = NULL;
     EDITOR.cursor = malloc(sizeof(T_CURSOR));
     EDITOR.cursor->editing = false;
     EDITOR.cursor->point = EDITOR.head_data;
@@ -63,13 +51,6 @@ EDITOR init_editor(void){
         }
     }else{
         err(-1, "Failed to get current cursor position.");
-    }
-
-    // printf("[debug] %d, %d\r\n", EDITOR.curr_row, EDITOR.curr_col);
-
-    int succ_get_winsize;
-    if ((succ_get_winsize = ioctl(1, TIOCGWINSZ, EDITOR.ws)) != 0){
-        err(succ_get_winsize, "[ERROR] Failed to get window size.");
     }
     return EDITOR;
 }

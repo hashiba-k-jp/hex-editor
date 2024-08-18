@@ -112,10 +112,8 @@ int main(int argc, char *argv[]){
         err(-1, "Failed to read files or construct the data structres...");
     }
 
+    get_winsize(&EDITOR);
     init_screen(&EDITOR);
-
-    header_msg(&EDITOR);
-    footer_msg(&EDITOR);
 
     char *msg;
     int input_c;
@@ -127,7 +125,6 @@ int main(int argc, char *argv[]){
         footer_msg(&EDITOR);
         print_screen(&EDITOR);
         input_c = keyInput();
-        // printf("[debug] input_c = %x\r\n", input_c);
         res_process = keyProcess(input_c, msg, &EDITOR);
     }
 
@@ -141,10 +138,10 @@ void _move_cursor(EDITOR *EDITOR, int diff, int move_dir){
     T_DATA *tmp;
     if(move_dir == DIR_NEXT){
         for(int i = 0; i < diff; i++){
-            if((tmp = EDITOR->cursor->point->next) == EDITOR->tail_data){
+            if(EDITOR->cursor->point->next == EDITOR->tail_data){
                 break;
             }else{
-                EDITOR->cursor->point = tmp;
+                EDITOR->cursor->point = EDITOR->cursor->point->next;
             }
         }
     }else if(move_dir == DIR_PREV){
@@ -166,15 +163,12 @@ int keyProcess(int c, char* msg, EDITOR *EDITOR){
             EDITOR->cursor->point->data = EDITOR->cursor->point->data|(0x00FF & c);
             EDITOR->cursor->editing = false;
         }else{ /* other key input */
+            printf("\a");
         }
     }else{
         if(KEY0 <= c && c <= KEYF){
-            // [todo] ファイルの最後に挿入するとsegfault
-
             T_DATA *insert = malloc(sizeof(T_DATA));
-            // insert->data = (c&0x000F)<<4;
             insert->data = (c&0x00FF)<<4;
-
             EDITOR->cursor->point->next->prev = insert;
             insert->next = EDITOR->cursor->point->next;
             EDITOR->cursor->point->next = insert;
@@ -188,35 +182,29 @@ int keyProcess(int c, char* msg, EDITOR *EDITOR){
                     break;
                 case CTRL_S:
                     res = save_file(EDITOR);
+                    break;
+                case ARR_UP:
+                    _move_cursor(EDITOR, ((EDITOR->ws->ws_col-19) / 24)*8, DIR_PREV);
+                    break;
+                case ARR_DW:
+                    _move_cursor(EDITOR, ((EDITOR->ws->ws_col-19) / 24)*8, DIR_NEXT);
+                    break;
+                case ARR_RI:
+                    _move_cursor(EDITOR, 1, DIR_NEXT);
+                    break;
+                case ARR_LE:
+                    _move_cursor(EDITOR, 1, DIR_PREV);
+                    break;
             }
 
         }
     }
 
-    switch (c) {
-        case CTRL_Q:
-            // [Todo] Save or not.
-            if(EDITOR->cursor->editing){
-                printf("\a");
-                exit(EXIT_SUCCESS);
-            }else{
-                exit(EXIT_SUCCESS);
-            }
-            break;
-
-        case ARR_UP:
-            _move_cursor(EDITOR, ((EDITOR->ws->ws_col-19) / 24)*8, DIR_PREV);
-            break;
-        case ARR_DW:
-            _move_cursor(EDITOR, ((EDITOR->ws->ws_col-19) / 24)*8, DIR_NEXT);
-            break;
-        case ARR_RI:
-            _move_cursor(EDITOR, 1, DIR_NEXT);
-            break;
-        case ARR_LE:
-            _move_cursor(EDITOR, 1, DIR_PREV);
-            break;
+    // FOR DEBUG
+    if(c == CTRL_Q){
+        exit(EXIT_SUCCESS);
     }
+
     return 1;
 }
 

@@ -257,7 +257,11 @@ void print_screen(EDITOR *EDITOR){
     printf("%s", display_buf_all);
 
     /* display cursor */
-    printf("\x1B[%d;%dH\x1B[?25h", curr_row+1+1, (curr_col+1)*2+12+1);
+    if(EDITOR->cursor->hex_input){
+        printf("\x1B[%d;%dH\x1B[?25h", (curr_row+1)+1, (curr_col+1)*2+12+1);
+    }else{
+        printf("\x1B[%d;%dH\x1B[?25h", (curr_row+1)+1, (curr_col+1)+(line_size*2)+3+12+1);
+    }
 
     return;
 }

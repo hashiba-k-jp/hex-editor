@@ -23,7 +23,6 @@ typedef struct editor{
 
 }EDITOR;
 
-
 typedef struct t_data{ // [todo] 4-bit or 8-bit ?
     /* 0x00-0xFF */
     unsigned char data;
@@ -36,8 +35,10 @@ typedef struct t_data{ // [todo] 4-bit or 8-bit ?
 typedef struct t_cursor{
     struct t_data *point;
     bool editing;
-    bool head; /* true if cursor == EDITOR.head_data */
+    // bool head; /* true if cursor == EDITOR.head_data */
+    bool hex_input;
 }T_CURSOR;
+enum input_window{ HEX_INPUT, ASCII_INPUT, };
 
 // hex.c
 int keyProcess(int, char*, EDITOR*);

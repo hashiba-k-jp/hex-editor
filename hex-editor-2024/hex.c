@@ -175,6 +175,9 @@ int keyProcess(int c, char* msg, EDITOR *EDITOR){
             EDITOR->cursor->editing = true;
         }else{
             switch (c) {
+                case TAB:
+                    EDITOR->cursor->hex_input ^= true;
+                    break;
                 case CTRL_Q:
                     exit(EXIT_SUCCESS);
                     break;

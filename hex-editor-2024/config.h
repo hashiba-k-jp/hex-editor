@@ -22,8 +22,10 @@ EDITOR init_editor(void){
     EDITOR.tail_data->next = NULL;
     EDITOR.tail_data->prev = NULL;
     EDITOR.cursor = malloc(sizeof(T_CURSOR));
-    EDITOR.cursor->editing = false;
     EDITOR.cursor->point = EDITOR.head_data;
+    EDITOR.cursor->editing = false;
+    EDITOR.cursor->hex_input = true;
+
 
     int len = 0;
 

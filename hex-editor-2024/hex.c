@@ -161,7 +161,18 @@ int keyProcess(int c, char* msg, EDITOR *EDITOR){
             EDITOR->cursor->point->data = EDITOR->cursor->point->data|(0x00FF & c);
             EDITOR->cursor->editing = false;
         }else{ /* other key input */
-            printf("\a");
+            struct t_data *old_cursor = EDITOR->cursor->point;
+            switch (c) {
+                case DEL:
+                    EDITOR->cursor->point->prev->next = EDITOR->cursor->point->next;
+                    EDITOR->cursor->point->next->prev = EDITOR->cursor->point->prev;
+                    EDITOR->cursor->point = EDITOR->cursor->point->prev;
+                    free(old_cursor);
+                    EDITOR->cursor->editing = false;
+                    break;
+                default:
+                    break;
+            }
         }
     }else{
         if(KEY0 <= c && c <= KEYF){
@@ -175,6 +186,14 @@ int keyProcess(int c, char* msg, EDITOR *EDITOR){
             EDITOR->cursor->editing = true;
         }else{
             switch (c) {
+                case DEL:
+                    /* カーソルが先頭にある場合には DELELE するものがない */
+                    if(EDITOR->cursor->point != EDITOR->head_data){
+                        EDITOR->cursor->point->data &= 0xF0;
+                        EDITOR->cursor->editing = true;
+                    }
+                    // printf("\a"); // debug
+                    break;
                 case TAB:
                     EDITOR->cursor->hex_input ^= true;
                     break;
@@ -239,6 +258,7 @@ int keyInput(){
             return c;
         }else{
             switch(seq[0]){
+                case DEL:
                 case TAB:
                 case CTRL_G:
                 case CTRL_Q:

@@ -43,6 +43,9 @@ int save_file(EDITOR *EDITOR){
     // こんな感じ？
     // ここでファイルのアクセス権限に注意!
 
+    // [ERROR] 元のファイルより短いようなデータを保存するとき、残りの部分がそのまま残ってしまう
+    // （短い部分しか上書きされない）
+
     if(access(EDITOR->filename, W_OK) != 0){
         err(errno, "Cannot overwrite to the file %s", EDITOR->filename);
     }else{

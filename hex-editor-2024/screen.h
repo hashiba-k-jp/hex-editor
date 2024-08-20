@@ -148,19 +148,19 @@ void print_screen(EDITOR *EDITOR){
             [カーソル修正] {6} \x1B[0;0H
             [本文] {strlen(*(EDITOR->header))}
             [改行] {2} \r\n
-        <本体部分> 11+1+line_size*(2+5+1+5+8)+4+3+2+4 = line_size*21+25
+        <本体部分> 11+1+line_size*(2+5+1+5+8)+4+3+2+4+9+9 = line_size*21+43
             [アドレス番号+:] 11
             [空白] 1
-            [hex]  line_size*(2+5)    (5 = \x1b[47m)
+            [hex]  line_size*(2+5)+9    (5 = \x1b[47m, 9 = cursor)
             [空白] 4+3 (4 = \x1b[0m)
-            [char] line_size*(1+5+8)  (\x1B[1m \x1B[0m 色を変えた文字)
+            [char] line_size*(1+5+8)+9  (\x1B[1m \x1B[0m 色を変えた文字, 9=cursor)
             [end] 2+4 \r\n\x1b[0m
         <footer> strlen(*(EDITOR->footer+0)) + strlen(*(EDITOR->footer+1)) + strlen(*(EDITOR->footer+2)) + 4
     */
 
-    int all_length = (14+strlen(*EDITOR->header)) + (line_size*21+25)*(EDITOR->ws->ws_row-4) + (strlen(*(EDITOR->footer+0))+strlen(*(EDITOR->footer+1))+strlen(*(EDITOR->footer+2))+4);
+    int all_length = (14+strlen(*EDITOR->header)) + (line_size*21+43)*(EDITOR->ws->ws_row-4) + (strlen(*(EDITOR->footer+0))+strlen(*(EDITOR->footer+1))+strlen(*(EDITOR->footer+2))+4);
     // char *display_buf_all   = (char *)malloc(sizeof(char)*all_length);
-    char *display_buf_all   = (char *)malloc(sizeof(char)*(line_size*21+25)*(EDITOR->ws->ws_row-4));
+    char *display_buf_all   = (char *)malloc(sizeof(char)*(line_size*21+43)*(EDITOR->ws->ws_row-4));
     int offset_all = 0;
 
     offset_all = _ncpy_buf(display_buf_all, "\x1B[?25l", offset_all);
@@ -170,7 +170,7 @@ void print_screen(EDITOR *EDITOR){
 
     // printf("\x1B[0;0H%s\r\n", *(EDITOR->header));
 
-    char *display_buf       = (char *)malloc(sizeof(char)*(line_size*21+25));
+    char *display_buf       = (char *)malloc(sizeof(char)*(line_size*21+43));
     char *display_char_buf  = (char *)malloc(sizeof(char)*(line_size*14));
     char *addr_buf = (char *)malloc(sizeof(char)*12);
     char *hex_buf  = (char *)malloc(sizeof(char)*3);
@@ -187,7 +187,7 @@ void print_screen(EDITOR *EDITOR){
     }
 
     for(int i = 0; i < EDITOR->ws->ws_row-4; i++){
-        memset(display_buf,      '\0', line_size*21+25);
+        memset(display_buf,      '\0', line_size*21+43);
         memset(display_char_buf, '\0', line_size*14);
         memset(addr_buf, '\0', 12);
         memset(hex_buf,  '\0', 3);
@@ -216,15 +216,23 @@ void print_screen(EDITOR *EDITOR){
                 filled_disp_buf      = _ncpy_buf(display_buf,      "  ", filled_disp_buf     );
                 filled_disp_char_buf = _ncpy_buf(display_char_buf, " ",  filled_disp_char_buf);
             }else{
-                asprintf(&hex_buf, "%02X", print_curr->data);
-                filled_disp_buf = _ncpy_buf(display_buf, hex_buf, filled_disp_buf);
-
-                if(0x20 <= print_curr->data && print_curr->data <= 0x7E){
-                    asprintf(&char_buf, "%c", print_curr->data);
-                    filled_disp_char_buf = _ncpy_buf(display_char_buf, char_buf,           filled_disp_char_buf); // strlen(char_buf)
+                if(print_curr == EDITOR->cursor->point && EDITOR->cursor->editing){
+                    // asprintf(&hex_buf, "%1X_", (print_curr->data & 0xF0)>>4);
+                    asprintf(&hex_buf, "\x1B[36m%1X_\x1B[0m", (print_curr->data & 0xF0)>>4);
+                    // char_buf = "\x1B[1m_\x1B[0m";
+                    char_buf = "\x1B[36m_\x1B[0m";
                 }else{
-                    filled_disp_char_buf = _ncpy_buf(display_char_buf, "\x1B[1m･\x1B[0m",  filled_disp_char_buf); // strlen(char_buf)
+                    asprintf(&hex_buf, "%02X", print_curr->data);
+                    if(0x20 <= print_curr->data && print_curr->data <= 0x7E){
+                        asprintf(&char_buf, "%c", print_curr->data);
+                    }else{
+                        char_buf = "\x1B[1m･\x1B[0m";
+                    }
                 }
+                filled_disp_buf = _ncpy_buf(display_buf, hex_buf, filled_disp_buf);
+                filled_disp_char_buf = _ncpy_buf(display_char_buf, char_buf,           filled_disp_char_buf); // strlen(char_buf)
+
+
                 print_curr = print_curr->next;
             }
         }

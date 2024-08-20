@@ -1,20 +1,23 @@
+#define BLOCK_SIZE 0x100
+// used in file.h
+
 typedef struct editor{
     char *filename;
     int fd;             // file descriptor for the input file.
     bool isColored;
-    struct winsize *ws;  // defined in <sys/ioctl.h>
+    struct winsize *ws; // defined in <sys/ioctl.h>
     int curr_row;       // CURRent row
     int curr_col;       // CURRent row
     int filesize;
     bool isEdited;
     char **footer;
     char **header;
-    // int line_size;
 
-    // struct datablock *head_block;
-    struct t_data *head_data;
-    struct t_data *tail_data;
-    struct t_cursor *cursor;
+    unsigned char *file_data;
+    int num_byte;
+    struct t_data *head_data;   // to be UN-USED
+    struct t_data *tail_data;   // to be UN-USED
+    struct t_cursor *cursor;    // to be UN-USED
 
     int curr_footer_status;
     int prev_footer_status;
@@ -59,8 +62,9 @@ int read_file(EDITOR*);
 int save_file(EDITOR*);
 
 // screen.h
+void get_winsize(EDITOR*);
 void header_msg(EDITOR*);
 void footer_msg(EDITOR*);
 void init_screen(EDITOR*);
-void print_screen(EDITOR*);
-void get_winsize(EDITOR*);
+// void print_screen(EDITOR*);
+void print_screen2(EDITOR*);

@@ -3,8 +3,10 @@ int read_file(EDITOR *EDITOR){
 
     if(EDITOR->fd == -1){
         // [todo] ファイルが開かれていない場合の処理をここで
-
+        EDITOR->filesize = 0;
     }else{
+        EDITOR->filesize = lseek(EDITOR->fd, 0, SEEK_END);
+        lseek(EDITOR->fd, 0, SEEK_SET); /* Set the offset at the head of the file. */
         int i = 0;
         char *buf = (char *)malloc(sizeof(char));
         int len;
@@ -31,6 +33,25 @@ int read_file(EDITOR *EDITOR){
         reader->point->next = EDITOR->tail_data;
         EDITOR->tail_data->prev = reader->point;
     }
+
+    /* New data structure starts here */
+    lseek(EDITOR->fd, 0, SEEK_SET); /* Set the offset at the head of the file. */
+    EDITOR->file_data = (unsigned char *)malloc(sizeof(unsigned char) * ceil(EDITOR->filesize/(double)(BLOCK_SIZE))*BLOCK_SIZE);
+    int len;
+    unsigned char *buf_ = (unsigned char*)malloc(sizeof(unsigned char));
+    for(int j = 0; j < EDITOR->filesize; j++){
+        if((len = read(EDITOR->fd, buf_, 1)) != 1){
+            if(errno == -1){
+                err(errno, "Failed to read char.");
+            }else{
+                err(errno, "Invalid number of read bytes. (%d bytes have been read.)", len);
+            }
+        }else{
+            *(EDITOR->file_data+j) = *buf_;
+        }
+    }
+    /* New data structure ends here */
+
     return 0;
 }
 

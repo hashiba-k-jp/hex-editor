@@ -13,6 +13,8 @@ EDITOR init_editor(void){
     EDITOR.curr_col     = 0;
     EDITOR.msgStatus    = 0b00000000;
 
+    EDITOR.file_data = (unsigned char *)malloc(sizeof(unsigned char)*0);
+    EDITOR.num_byte  = 0;
     EDITOR.head_data = malloc(sizeof(T_DATA));
     EDITOR.tail_data = malloc(sizeof(T_DATA));
     EDITOR.head_data->data = 0xEE; // do NOT use this value in "if" and other statements

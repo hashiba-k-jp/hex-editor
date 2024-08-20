@@ -16,6 +16,7 @@
 #include <stdlib.h> // atexit(),
 #include <string.h> // memcmp(),
 #include <fcntl.h> // open(), O_RDONLY,...
+#include <math.h>  // ceil()
 
 #include "header.h"
 
@@ -98,12 +99,12 @@ int main(int argc, char *argv[]){
     */
     /* at first, get file zise. (This may not needed.) */
     // const int BLOCK_SIZE = 0x800;
-    if(EDITOR.fd != -1){
-        EDITOR.filesize = lseek(EDITOR.fd, 0, SEEK_END);
-        lseek(EDITOR.fd, 0, SEEK_SET); /* Set the offset at the head of the file. */
-    }else{
-        EDITOR.filesize = 0;
-    }
+    // if(EDITOR.fd != -1){
+    //     EDITOR.filesize = lseek(EDITOR.fd, 0, SEEK_END);
+    //     lseek(EDITOR.fd, 0, SEEK_SET); /* Set the offset at the head of the file. */
+    // }else{
+    //     EDITOR.filesize = 0;
+    // }
     // printf("[debug] file size is %d\r\n", EDITOR.filesize);
 
     if(read_file(&EDITOR) == -1){
@@ -121,7 +122,7 @@ int main(int argc, char *argv[]){
         get_winsize(&EDITOR);
         header_msg(&EDITOR);
         footer_msg(&EDITOR);
-        print_screen(&EDITOR);
+        print_screen2(&EDITOR);
         input_c = keyInput();
         res_process = keyProcess(input_c, msg, &EDITOR);
     }
